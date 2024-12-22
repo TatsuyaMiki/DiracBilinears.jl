@@ -50,12 +50,12 @@ QE/bin/pw.x < seedname.nscf.in > seedname.nscf.out
 When you calculate Wannier matrix elements, you need to generate the Wannier functions using [Wannier90] and [wan2respack] ([RESPACK]) after the scf and the nscf calculations.
 The following command is for these two packages (for more information, see the GitHub page of [wan2respack]):
 ```sh
-python wan2respack/bin/wan2respack.py -pp conf.toml
+python Wan2respack/bin/wan2respack.py -pp conf.toml
 QE/bin/pw.x < seedname.nscf_wannier.in > seedname.nscf_wannier.out
 Wanier90/wannier90.x -pp seedname
 QE/bin/pw2wannier90.x < seedname.pw2wan.in > seedname.pw2wan.out
 Wanier90/wannier90.x seedname
-python wan2respack/bin/wan2respack.py conf.toml
+python Wan2respack/bin/wan2respack.py conf.toml
 ```
 [wan2respack]: https://github.com/respack-dev/wan2respack/tree/main
 [Wannier90]: https://wannier.org
