@@ -1,0 +1,11 @@
+[base]
+QE_output_dir = "./tmp/nscf/Te.save"
+seedname = "Te"
+
+[pre.ref]
+nscf = "Te.nscf.in"
+win = "Te.win.ref"
+
+[pre.output]
+nscf = "Te.nscf_wannier.in"
+win = "Te.win"

@@ -1,0 +1,11 @@
+[base]
+QE_output_dir = "./tmp/nscf/BaTiO3.save"
+seedname = "BaTiO3"
+
+[pre.ref]
+nscf = "BaTiO3.nscf.in"
+win = "BaTiO3.win.ref"
+
+[pre.output]
+nscf = "BaTiO3.nscf_wannier.in"
+win = "BaTiO3.win"

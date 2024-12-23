@@ -1,0 +1,7 @@
+&inputpp
+    outdir='./tmp/nscf'
+    prefix='BaTiO3',
+    seedname = 'BaTiO3'
+    spin_component = 'none'
+    write_unk = .true.
+/

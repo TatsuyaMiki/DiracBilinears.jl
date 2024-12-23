@@ -1,0 +1,7 @@
+&inputpp
+    outdir='./tmp/nscf'
+    prefix='Te',
+    seedname = 'Te'
+    spin_component = 'none'
+    write_unk = .true.
+/
