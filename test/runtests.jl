@@ -11,7 +11,7 @@ end
     a = 8.422887281
     cona = 1.330207305
     a1 = a*[1.0, 0.0, 0.0]
-    a2 = a*[-1.0/2.0, sqrt(3.0)/2.0, 0.0]
+    a2 = a*[-1.0/2.0, √(3.0)/2.0, 0.0]
     a3 = a*[0.0, 0.0, cona]
     b1ref = 2π*(LA.cross(a2, a3)./LA.dot(a1, LA.cross(a2, a3)))
     b2ref = 2π*(LA.cross(a3, a1)./LA.dot(a2, LA.cross(a3, a1)))
