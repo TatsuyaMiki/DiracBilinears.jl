@@ -63,7 +63,7 @@ function calc_wannier_ok(calc::String, cs::Array{ComplexF64, 3}, k::Vector{Float
     end
 end
 
-function make_rmesh(nrs)
+function make_rmesh(nrs::Tuple)
     nvec = zeros(Int, (3, nrs[1]*nrs[2]*nrs[3]))
     ir = 0
     for ir1 in 1:nrs[1]
@@ -128,8 +128,8 @@ function calc_wan_ps(cs::Array{ComplexF64, 3}, k::Vector{Float64}, mill::Matrix{
 end
 
 function write_wannier_matrix(hr::Array{ComplexF64, 3}, rs::Matrix{Int}; savefile::String)
-    nr::Int = axes(rs)[2]
-    nwfc::Int = axes(hr)[1]
+    nr::Int = size(rs)[2]
+    nwfc::Int = size(hr)[1]
     io = open(savefile,"w")
     PF.@printf(io, "%2s\n", "Written on "*"$(Dates.now())")
     PF.@printf(io, "%10d\n", nwfc)
