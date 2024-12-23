@@ -1,4 +1,6 @@
-# DiracBilinears - a tool for calculating physical quantities based on relativistic quantum theory [![Build Status](https://github.com/TatsuyaMiki/DiracBilinears.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/TatsuyaMiki/DiracBilinears.jl/actions/workflows/CI.yml?query=branch%3Amain) [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://TatsuyaMiki.github.io/DiracBilinears.jl/stable/) [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://TatsuyaMiki.github.io/DiracBilinears.jl/dev/)
+# DiracBilinears.jl 
+
+[![Build Status](https://github.com/TatsuyaMiki/DiracBilinears.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/TatsuyaMiki/DiracBilinears.jl/actions/workflows/CI.yml?query=branch%3Amain) [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://TatsuyaMiki.github.io/DiracBilinears.jl/stable/) [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://TatsuyaMiki.github.io/DiracBilinears.jl/dev/)
 
 
 This package provides tools for computing microscopic physical quantities in relativistic quantum theory called Dirac bilinears, which are the fundamental 16 independent quantities derived from the Dirac field.
