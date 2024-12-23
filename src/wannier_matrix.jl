@@ -18,10 +18,6 @@ function calc_wannier_matrix(;calc::String, nrs::Tuple, wfndir::String, wandir::
     o = make_zeros_wannier(calc, nrs, nwfc)
     ax = axes(o)
     for ik in 1:nxk
-        # if ik % 100 == 0
-        #     println("Calculating at ik=$(ik)...")
-        # end
-        println("Calculating at ik=$(ik)..."); flush(stdout)
         k = ks[:, ik]
         ng = ngs[ik]
         mill = mills[:, :, ik]

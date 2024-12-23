@@ -4,7 +4,6 @@ function calc_density(;calc::String, nrmesh::Tuple, qedir::String, n1::Float64=0
     xml = read_xml(qedir*"/data-file-schema.xml")
     volume = xml.nxk*abs(LA.dot(xml.a3, LA.cross(xml.a1, xml.a2)))
     for ik in 1:xml.nxk
-        println("Calculating at ixk=$(ik)..."); flush(stdout)
         wfcfile = qedir*"/wfc$(ik).dat"
         wfc = read_wfc(wfcfile)
 
@@ -56,15 +55,6 @@ end
 function calc_density_ms(ukn, occ::Vector{Float64})
     return ES.ein"xyzbs,sti,xyzbt,b->ixyz"(conj.(ukn), σ, ukn, occ)
 end
-
-# function calc_density_τz(nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
-#     @assert wfc.npol == 2
-#     kudu = zeros(ComplexF64, (3, nrmesh..., wfc.nbnd, wfc.npol))
-#     for ix in 1:3
-#         kudu[ix, :, :, :, :, :] = wfc.xk[ix]*ukn[:, :, :, :, :] .+ ∇ukn[:, :, :, :, ix, :]
-#     end
-#     return 2.0*real.(ES.ein"xyzbs,sti,ixyzbt,b->xyz"(conj.(ukn), σ, kudu, occ))
-# end
 
 function calc_density_τz(nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
     @assert wfc.npol == 2
