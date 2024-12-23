@@ -126,3 +126,29 @@ function calc_wan_ps(cs::Array{ComplexF64, 3}, k::Vector{Float64}, mill::Matrix{
     end
     return psk
 end
+
+function write_wannier_matrix(hr::Array{ComplexF64, 3}, rs::Matrix{Int}; savefile::String)
+    nr::Int = axes(rs)[2]
+    nwfc::Int = axes(hr)[1]
+    io = open(savefile,"w")
+    PF.@printf(io, "%2s\n", "Written on "*"$(Dates.now())")
+    PF.@printf(io, "%10d\n", nwfc)
+    PF.@printf(io, "%10d\n", nr)
+    for i in 1:div(nr, 15)
+        PF.@printf(io, "%5d%5d%5d%5d%5d%5d%5d%5d%5d%5d%5d%5d%5d%5d%5d\n", 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+    end
+    if nr%15 != 0
+        for i in 1:nr%15-1
+            PF.@printf(io, "%5d", 1)
+        end
+        PF.@printf(io, "%5d\n", 1)
+    end
+    for ir in 1:nr
+        for m in 1:nwfc
+            for n in 1:nwfc
+                PF.@printf(io, "%5d%5d%5d%5d%5d%25.17f%25.17f\n", rs[1, ir], rs[2, ir], rs[3, ir], n, m, real(hr[n, m, ir]), imag(hr[n, m, ir]))
+            end
+        end
+    end
+    close(io)
+end
