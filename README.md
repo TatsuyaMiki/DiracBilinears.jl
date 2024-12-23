@@ -100,3 +100,8 @@ using DiracBilinears
 τz, rs = calc_wannier_matrix(calc="τz", nrs=(5,5,5), wfndir=WFNDIR, wandir=WANDIR)
 ```
 You can select the option ``calc`` from the table.
+
+The Wannier matrix elements can be saved to a text file using the following command:
+```Julia
+write_wannier_matrix(τz, rs; savefile=FILENAME)
+```
