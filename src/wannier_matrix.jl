@@ -12,7 +12,6 @@ function calc_wannier_matrix(;calc::String, nrs::Tuple, wfndir::String, wandir::
     ecut4psi = calc_ecut_for_ψ(kgi, ntg, nkirr, ngi, ski, b1, b2, b3)
     ngs, mills = calc_kg0s(ecut4psi, rg, rw, ngi, ntg, trs, ski, b1, b2, b3, ntk, numirr, numrot)
     nxk = length(ngs)
-
     iowan = open(wandir*"/dat.wan", "r");
     seek(iowan, 4)
     nwfc = Int(read(iowan, Int32))

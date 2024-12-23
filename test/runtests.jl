@@ -1,13 +1,13 @@
-using DiracBilinears
 using Revise
 using Test
+import DiracBilinears as DB
 import LinearAlgebra as LA
 
 @testset "DiracBilinears.jl" begin
     # Write your tests here.
 end
 
-@testset "read wfc" begin
+@testset "Read wfc" begin
     a = 8.422887281
     cona = 1.330207305
     a1 = a*[1.0, 0.0, 0.0]
@@ -18,7 +18,7 @@ end
     b3ref = 2π*(LA.cross(a1, a2)./LA.dot(a3, LA.cross(a1, a2)))
 
     file = "./tmp/wfc1.dat"
-    wfc = read_wfc(file)
+    wfc = DB.read_wfc(file)
     @test wfc.ik == 1
     @test wfc.xk == [0.0, 0.0, 0.0]
     @test wfc.npol == 2

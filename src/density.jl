@@ -28,6 +28,8 @@ function make_zeros_density(calc::String, nrmesh::Tuple)
         return zeros(3, nrmesh...)
     elseif calc == "τz" || calc == "chirality"
         return zeros(nrmesh...)
+    elseif calc == "ps"
+        return zeros(3, nrmesh...)
     else
         @assert false "Invalid value assigned to 'calc'."
     end
@@ -40,6 +42,8 @@ function calc_density_ok(calc::String, nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ
         return calc_density_ms(ukn, occ)
     elseif calc == "τz" || calc == "chirality"
         return calc_density_τz(nrmesh, wfc, ukn, ∇ukn, occ)
+    elseif calc == "ps"
+        return calc_density_ps(nrmesh, wfc, ukn, ∇ukn, occ)
     else
         @assert false "Invalid value assigned to 'calc'."
     end
@@ -81,7 +85,11 @@ function calc_density_ps(nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float
     for ix in 1:3
         kudu[ix, :, :, :, :, :] = wfc.xk[ix]*ukn[:, :, :, :, :] .+ ∇ukn[:, :, :, :, ix, :]
     end
-    return 2.0*real.(ES.ein"ijk,xyzbs,stj,kxyzbt,b->ixyz"(ϵijk, conj.(ukn), σ, kudu, occ))
+    @inbounds for ib in 1:wfc.nbnd
+        ukn[:, :, :, ib, :] .*= occ[ib]
+    end
+    tmp = ES.ein"xyzbs,ixyzbt->xyzsti"(conj.(ukn), kudu)
+    return 2.0*real.(ES.ein"ijk,stj,xyzstk->ixyz"(ϵijk, σ, tmp))
 end
 
 function calc_fourier_k(nrmesh::Tuple, ck)
