@@ -25,6 +25,10 @@ function make_zeros_density(calc::String, nrmesh::Tuple)
         return zeros(nrmesh...)
     elseif calc == "ms"
         return zeros(3, nrmesh...)
+    elseif calc == "∇ρ"
+        return zeros(3, nrmesh...)
+    elseif calc == "∇ms"
+        return zeros(nrmesh...)
     elseif calc == "τz" || calc == "chirality"
         return zeros(nrmesh...)
     elseif calc == "ps"
@@ -37,12 +41,12 @@ end
 function calc_density_ok(calc::String, nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
     if calc == "ρ"
         return calc_density_ρ(ukn, occ)
+    elseif calc == "ms"
+        return calc_density_ms(ukn, occ)
     elseif calc == "∇ρ"
         return calc_density_∇ρ(wfc, ukn, ∇ukn, occ)
     elseif calc == "∇ms"
         return calc_density_∇ms(wfc, ukn, ∇ukn, occ)
-    elseif calc == "ms"
-        return calc_density_ms(ukn, occ)
     elseif calc == "τz" || calc == "chirality"
         return calc_density_τz(nrmesh, wfc, ukn, ∇ukn, occ)
     elseif calc == "ps"
