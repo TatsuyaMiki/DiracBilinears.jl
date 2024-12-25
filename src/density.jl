@@ -37,6 +37,10 @@ end
 function calc_density_ok(calc::String, nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
     if calc == "ρ"
         return calc_density_ρ(ukn, occ)
+    elseif calc == "∇ρ"
+        return calc_density_∇ρ(wfc, ukn, ∇ukn, occ)
+    elseif calc == "∇ms"
+        return calc_density_∇ms(wfc, ukn, ∇ukn, occ)
     elseif calc == "ms"
         return calc_density_ms(ukn, occ)
     elseif calc == "τz" || calc == "chirality"
@@ -54,6 +58,20 @@ end
 
 function calc_density_ms(ukn, occ::Vector{Float64})
     return ES.ein"xyzbs,sti,xyzbt,b->ixyz"(conj.(ukn), σ, ukn, occ)
+end
+
+function calc_density_∇ρ(wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
+    @inbounds for ib in 1:wfc.nbnd
+        ukn[:, :, :, ib, :] .*= occ[ib]
+    end
+    return 2.0*imag.(ES.ein"ixyzbs,xyzbs->xyzsti"(conj.(∇ukn), ukn))
+end
+
+function calc_density_∇ms(wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
+    @inbounds for ib in 1:wfc.nbnd
+        ukn[:, :, :, ib, :] .*= occ[ib]
+    end
+    return 2.0*imag.(ES.ein"ixyzbs,ist,xyzbt->xyz"(conj.(∇ukn), σ, ukn))
 end
 
 function calc_density_τz(nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
