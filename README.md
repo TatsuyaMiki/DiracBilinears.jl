@@ -72,13 +72,14 @@ To compute the spatial distribution of electron chirality $\tau^Z(\boldsymbol{r}
 using DiracBilinears
 τz = calc_density(calc="τz", nrmseh=(32,32,32), qedir=QEDIR)
 ```
-The physical quantities to be calculated can be selected by specifying the option ``calc``, whose list is provided in the table.
-
+The physical quantities to be calculated can be selected by specifying the option ``calc``, whose list is provided in the following table.
 |``calc`` | Physical quantities |
 |:---:|:---:|
 |"ρ"| electron density |
 |"ms"| magnetization |
+|"∇ms"|pseudo-scalar|
 |"τz"|electron chirality|
+|"∇ρ"| dradient part of polarization|
 |"ps"|spin-derived electric polarization|  
 
 You can generate the xsf file after the ``calc_density()`` calculation:
@@ -99,7 +100,13 @@ The following command is used to calculate the matrix elements of electron chira
 using DiracBilinears
 τz, rs = calc_wannier_matrix(calc="τz", nrs=(5,5,5), wfndir=WFNDIR, wandir=WANDIR)
 ```
-You can select the option ``calc`` from the table.
+You can select the option ``calc`` from the following table.
+|``calc`` | Physical quantities |
+|:---:|:---:|
+|"ρ"| electron density |
+|"ms"| magnetization |
+|"τz"|electron chirality|
+|"ps"|spin-derived electric polarization| 
 
 The Wannier matrix elements can be saved to a text file using the following command:
 ```Julia
