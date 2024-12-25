@@ -77,7 +77,7 @@ The physical quantities to be calculated can be selected by specifying the optio
 |:---:|:---:|
 |"ρ"| electron density |
 |"ms"| magnetization |
-|"∇ms"|pseudo-scalar|
+|"∇ms"|pseudoscalar|
 |"τz"|electron chirality|
 |"∇ρ"| dradient part of polarization|
 |"ps"|spin-derived electric polarization|  
