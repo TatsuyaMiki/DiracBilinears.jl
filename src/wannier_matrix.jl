@@ -132,7 +132,7 @@ function calc_wan_ps(cs::Array{ComplexF64, 3}, k::Vector{Float64}, mill::Matrix{
     for ipw in 1:igwx
         kgvec = (k[1] + mill[1,ipw])*b1 .+ (k[2] + mill[2,ipw])*b2 .+ (k[3] + mill[3,ipw])*b3
         cuk = cs[ipw, :, :]
-        psk += 2.0 .* ES.ein"ijk,j,stk,sm,tn->imn"(ϵijk, kgvec, σ, conj.(cuk), cuk) ./ nxk
+        psk += -2.0 .* ES.ein"ijk,j,stk,sm,tn->imn"(ϵijk, kgvec, σ, conj.(cuk), cuk) ./ nxk
     end
     return psk
 end

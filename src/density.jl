@@ -117,7 +117,7 @@ function calc_density_ps(nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float
         ukn[:, :, :, ib, :] .*= occ[ib]
     end
     tmp = ES.ein"xyzbs,ixyzbt->xyzsti"(conj.(ukn), kudu)
-    return 2.0*real.(ES.ein"ijk,stj,xyzstk->ixyz"(ϵijk, σ, tmp))
+    return -2.0*real.(ES.ein"ijk,stj,xyzstk->ixyz"(ϵijk, σ, tmp))
 end
 
 function calc_fourier_k(nrmesh::Tuple, ck)
