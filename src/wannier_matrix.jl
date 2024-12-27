@@ -36,6 +36,8 @@ function make_zeros_wannier(calc::String, nrs::Tuple, nwfc::Int)
         return zeros(ComplexF64, (nwfc, nwfc, nrs[1]*nrs[2]*nrs[3]))
     elseif calc == "ms"
         return zeros(ComplexF64, (3, nwfc, nwfc, nrs[1]*nrs[2]*nrs[3]))
+    elseif calc == "j"
+        return zeros(ComplexF64, (3, nwfc, nwfc, nrs[1]*nrs[2]*nrs[3]))
     elseif calc == "τz" || calc == "chirality"
         return zeros(ComplexF64, (nwfc, nwfc, nrs[1]*nrs[2]*nrs[3]))
     elseif calc == "ps"
@@ -50,6 +52,8 @@ function calc_wannier_ok(calc::String, cs::Array{ComplexF64, 3}, k::Vector{Float
         return calc_wan_ρ(cs, igwx, nwfc, nxk)
     elseif calc == "ms"
         return calc_wan_ms(cs, igwx, nwfc, nxk)
+    elseif calc == "j"
+        return calc_wan_j(cs, k, mill, b1, b2, b3, igwx, nwfc, nxk)
     elseif calc == "τz" || calc == "chirality"
         return calc_wan_τz(cs, k, mill, b1, b2, b3, igwx, nwfc, nxk)
     elseif calc == "ps"
@@ -101,6 +105,16 @@ function calc_wan_ms(cs::Array{ComplexF64, 3}, igwx::Int, nwfc::Int, nxk::Int)
         mk += ES.ein"sm,tn,sti->imn"(conj.(cuk), cuk, σ) ./ nxk
     end
     return mk
+end
+
+function calc_wan_j(cs::Array{ComplexF64, 3}, k::Vector{Float64}, mill::Matrix{Int}, b1::Vector{Float64}, b2::Vector{Float64}, b3::Vector{Float64}, igwx::Int, nwfc::Int, nxk::Int)
+    psk = zeros(ComplexF64, (3, nwfc, nwfc))
+    for ipw in 1:igwx
+        kgvec = (k[1] + mill[1,ipw])*b1 .+ (k[2] + mill[2,ipw])*b2 .+ (k[3] + mill[3,ipw])*b3
+        cuk = cs[ipw, :, :]
+        psk += 2.0 .* ES.ein"i,sm,sn->imn"(kgvec, conj.(cuk), cuk) ./ nxk
+    end
+    return psk
 end
 
 function calc_wan_τz(cs::Array{ComplexF64, 3}, k::Vector{Float64}, mill::Matrix{Int}, b1::Vector{Float64}, b2::Vector{Float64}, b3::Vector{Float64}, igwx::Int, nwfc::Int, nxk::Int)

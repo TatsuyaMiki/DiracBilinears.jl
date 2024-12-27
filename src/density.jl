@@ -25,6 +25,8 @@ function make_zeros_density(calc::String, nrmesh::Tuple)
         return zeros(nrmesh...)
     elseif calc == "ms"
         return zeros(3, nrmesh...)
+    elseif calc == "j"
+        return zeros(3, nrmesh...)
     elseif calc == "∇ρ"
         return zeros(3, nrmesh...)
     elseif calc == "∇ms"
@@ -43,6 +45,8 @@ function calc_density_ok(calc::String, nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ
         return calc_density_ρ(ukn, occ)
     elseif calc == "ms"
         return calc_density_ms(ukn, occ)
+    elseif calc == "j"
+        return return calc_density_j(nrmesh, wfc, ukn, ∇ukn, occ)
     elseif calc == "∇ρ"
         return calc_density_∇ρ(wfc, ukn, ∇ukn, occ)
     elseif calc == "∇ms"
@@ -76,6 +80,18 @@ function calc_density_∇ms(wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
         ukn[:, :, :, ib, :] .*= occ[ib]
     end
     return 2.0*imag.(ES.ein"ixyzbs,ist,xyzbt->xyz"(conj.(∇ukn), σ, ukn))
+end
+
+function calc_density_j(nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
+    @assert wfc.npol == 2
+    kudu = zeros(ComplexF64, (3, nrmesh..., wfc.nbnd, wfc.npol))
+    for ix in 1:3
+        kudu[ix, :, :, :, :, :] = wfc.xk[ix]*ukn[:, :, :, :, :] .+ ∇ukn[:, :, :, :, ix, :]
+    end
+    @inbounds for ib in 1:wfc.nbnd
+        ukn[:, :, :, ib, :] .*= occ[ib]
+    end
+    return 2.0*real.(ES.ein"xyzbs,ixyzbs->ixyz"(conj.(ukn), kudu))
 end
 
 function calc_density_τz(nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})

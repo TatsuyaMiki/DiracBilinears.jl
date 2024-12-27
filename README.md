@@ -77,6 +77,7 @@ The physical quantities to be calculated can be selected by specifying the optio
 |:---:|:---:|
 |"ρ"| electron density |
 |"ms"| magnetization |
+|"j"| current |
 |"∇ms"|pseudoscalar|
 |"τz"|electron chirality|
 |"∇ρ"| dradient part of polarization|
@@ -105,6 +106,7 @@ You can select the option ``calc`` from the following table.
 |:---:|:---:|
 |"ρ"| electron density |
 |"ms"| magnetization |
+|"j"| current |
 |"τz"|electron chirality|
 |"ps"|spin-derived electric polarization| 
 
