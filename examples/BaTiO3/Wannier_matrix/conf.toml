@@ -1,9 +1,9 @@
 [base]
-QE_output_dir = "./tmp/nscf/BaTiO3.save"
+QE_output_dir = "./tmp/scf/BaTiO3.save"
 seedname = "BaTiO3"
 
 [pre.ref]
-nscf = "BaTiO3.nscf.in"
+nscf = "BaTiO3.scf.in"
 win = "BaTiO3.win.ref"
 
 [pre.output]

@@ -1,9 +1,9 @@
 [base]
-QE_output_dir = "./tmp/nscf/Te.save"
+QE_output_dir = "./tmp/scf/Te.save"
 seedname = "Te"
 
 [pre.ref]
-nscf = "Te.nscf.in"
+nscf = "Te.scf.in"
 win = "Te.win.ref"
 
 [pre.output]
