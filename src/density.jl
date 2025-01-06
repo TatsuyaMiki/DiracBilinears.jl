@@ -214,17 +214,11 @@ function make_c_k(nrmesh::Tuple, wfc::Wfc; n1::Float64=0.0, n2::Float64=0.0, n3:
     return ck, ∇ck
 end
 
-function write_density(f0::Array{Float64, 3}; qedir::String, savefile::String, atoms::Vector{String}=["none"], atomic_positions::Matrix{Float64}=zeros(3,2), r1::Int=1, r2::Int=1, r3::Int=1)
+function write_density(f0::Array{Float64, 3}; qedir::String, savefile::String, atoms::Vector{String}=["none"], atomic_positions::Matrix{Float64}=zeros(3,2))
     xml = read_xml(qedir*"/data-file-schema.xml")
     na1, na2, na3 = size(f0)
-    fplot = zeros(Float64, (na1*r1+1, na2*r2+1, na3*r3+1))
-    for i3 in 1:r3
-        for i2 in 1:r2
-            for i1 in 1:r1
-                fplot[na1*(i1-1)+1:na1*i1, na2*(i2-1)+1:na2*i2, na3*(i3-1)+1:na3*i3] = copy(f0)
-            end
-        end
-    end
+    fplot = zeros(Float64, (na1+1, na2+1, na3+1))
+    fplot[1:end-1, 1:end-1, 1:end-1] = copy(f0)
     fplot[end, 1:end-1, 1:end-1] = copy(f0[1,:,:])
     fplot[1:end-1, end, 1:end-1] = copy(f0[:,1,:])
     fplot[1:end-1, 1:end-1, end] = copy(f0[:,:,1])
@@ -244,10 +238,11 @@ function write_density(f0::Array{Float64, 3}; qedir::String, savefile::String, a
     PF.@printf(io, "%15f%10f%10f\n", a1ang[1], a1ang[2], a1ang[3])
     PF.@printf(io, "%15f%10f%10f\n", a2ang[1], a2ang[2], a2ang[3])
     PF.@printf(io, "%15f%10f%10f\n", a3ang[1], a3ang[2], a3ang[3])
+    natom = length(atoms)
     if atoms[1] != "none"
         PF.@printf(io, "%2s\n", "PRIMCOORD")
-        PF.@printf(io, "%15f%10f\n", length(atoms), length(unique(atoms)))
-        for ia in 1:length(atoms)
+        PF.@printf(io, "%15f%10f\n", natom, length(unique(atoms)))
+        for ia in 1:natom
             ra = atomic_positions[1, ia]*a1ang + atomic_positions[2, ia]*a2ang + atomic_positions[3, ia]*a3ang
             PF.@printf(io, "%2s%10f%10f%10f\n", atoms[ia], ra[1], ra[2], ra[3])
         end
@@ -258,15 +253,15 @@ function write_density(f0::Array{Float64, 3}; qedir::String, savefile::String, a
     PF.@printf(io, "%2s\n", "BEGIN_BLOCK_DATAGRID_3D")
     PF.@printf(io, "%2s\n", "3D_field")
     PF.@printf(io, "%2s\n", "BEGIN_DATAGRID_3D_UNKNOWN")
-    PF.@printf(io, "%15d%10d%10d\n", na1*r1, na2*r2, na3*r3)
+    PF.@printf(io, "%15d%10d%10d\n", na1, na2, na3)
     PF.@printf(io, "%15f%10f%10f\n", 0.0, 0.0, 0.0)
-    PF.@printf(io, "%15f%10f%10f\n", a1ang[1]*r1, a1ang[2]*r1, a1ang[3]*r1)
-    PF.@printf(io, "%15f%10f%10f\n", a2ang[1]*r2, a2ang[2]*r2, a2ang[3]*r2)
-    PF.@printf(io, "%15f%10f%10f\n", a3ang[1]*r3, a3ang[2]*r3, a3ang[3]*r3)
+    PF.@printf(io, "%15f%10f%10f\n", a1ang[1], a1ang[2], a1ang[3])
+    PF.@printf(io, "%15f%10f%10f\n", a2ang[1], a2ang[2], a2ang[3])
+    PF.@printf(io, "%15f%10f%10f\n", a3ang[1], a3ang[2], a3ang[3])
     ia = 0
-    for ia3 in 1:na3*r3
-        for ia2 in 1:na2*r2
-            for ia1 in 1:na1*r1
+    for ia3 in 1:na3+1
+        for ia2 in 1:na2+1
+            for ia1 in 1:na1+1
                 ia += 1
                 if ia%6 == 0
                     PF.@printf(io, "%10f\n", fplot[ia1, ia2, ia3])
