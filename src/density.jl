@@ -253,7 +253,7 @@ function write_density(f0::Array{Float64, 3}; qedir::String, savefile::String, a
     PF.@printf(io, "%2s\n", "BEGIN_BLOCK_DATAGRID_3D")
     PF.@printf(io, "%2s\n", "3D_field")
     PF.@printf(io, "%2s\n", "BEGIN_DATAGRID_3D_UNKNOWN")
-    PF.@printf(io, "%15d%10d%10d\n", na1, na2, na3)
+    PF.@printf(io, "%15d%10d%10d\n", na1+1, na2+1, na3+1)
     PF.@printf(io, "%15f%10f%10f\n", 0.0, 0.0, 0.0)
     PF.@printf(io, "%15f%10f%10f\n", a1ang[1], a1ang[2], a1ang[3])
     PF.@printf(io, "%15f%10f%10f\n", a2ang[1], a2ang[2], a2ang[3])
