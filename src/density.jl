@@ -222,6 +222,9 @@ function write_density(f0::Array{Float64, 3}; qedir::String, savefile::String, a
     fplot[end, 1:end-1, 1:end-1] = copy(f0[1,:,:])
     fplot[1:end-1, end, 1:end-1] = copy(f0[:,1,:])
     fplot[1:end-1, 1:end-1, end] = copy(f0[:,:,1])
+    fplot[1:end-1, end, end] = copy(f0[:,1,1])
+    fplot[end, 1:end-1, end] = copy(f0[1,:,1])
+    fplot[end, end, 1:end-1] = copy(f0[1,1,:])
     fplot[end, end, end] = copy(f0[1,1,1])
     bohr2ang = 0.5291772083
     a1ang = xml.a1.*bohr2ang
