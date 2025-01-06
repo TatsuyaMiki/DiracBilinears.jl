@@ -55,12 +55,12 @@ using DiracBilinears
 The physical quantities to be calculated can be selected by specifying the option ``calc``, whose list is provided in the following table.
 |``calc`` | Physical quantities |
 |:---:|:---:|
-|"ρ"| electron density |
+|"ρ" (or "rho")|| electron density |
 |"ms"| magnetization |
 |"j"| current |
-|"∇ms"|pseudoscalar|
-|"τz"|electron chirality|
-|"∇ρ"| dradient part of polarization|
+|"∇ms" (or "nabla_ms")|pseudoscalar|
+|"τz" (or "tau_z")|electron chirality|
+|"∇ρ" (or "nabla_rho")| dradient part of polarization|
 |"ps"|spin-derived electric polarization|  
 
 You can generate the xsf file after the ``calc_density()`` calculation:
@@ -110,10 +110,10 @@ using DiracBilinears
 You can select the option ``calc`` from the following table.
 |``calc`` | Physical quantities |
 |:---:|:---:|
-|"ρ"| electron density |
+|"ρ" (or "rho")| electron density |
 |"ms"| magnetization |
 |"j"| current |
-|"τz"|electron chirality|
+|"τz" (or "tau_z", "chirality")|electron chirality|
 |"ps"|spin-derived electric polarization| 
 
 The Wannier matrix elements can be saved to a text file using the following command:

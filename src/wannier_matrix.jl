@@ -38,7 +38,7 @@ function make_zeros_wannier(calc::String, nrs::Tuple, nwfc::Int)
         return zeros(ComplexF64, (3, nwfc, nwfc, nrs[1]*nrs[2]*nrs[3]))
     elseif calc == "j"
         return zeros(ComplexF64, (3, nwfc, nwfc, nrs[1]*nrs[2]*nrs[3]))
-    elseif calc == "τz" || calc == "chirality"
+    elseif calc == "τz" || calc == "tau_z" || calc == "chirality"
         return zeros(ComplexF64, (nwfc, nwfc, nrs[1]*nrs[2]*nrs[3]))
     elseif calc == "ps"
         return zeros(ComplexF64, (3, nwfc, nwfc, nrs[1]*nrs[2]*nrs[3]))
@@ -54,7 +54,7 @@ function calc_wannier_ok(calc::String, cs::Array{ComplexF64, 3}, k::Vector{Float
         return calc_wan_ms(cs, igwx, nwfc, nxk)
     elseif calc == "j"
         return calc_wan_j(cs, k, mill, b1, b2, b3, igwx, nwfc, nxk)
-    elseif calc == "τz" || calc == "chirality"
+    elseif calc == "τz" || calc == "tau_z" || calc == "chirality"
         return calc_wan_τz(cs, k, mill, b1, b2, b3, igwx, nwfc, nxk)
     elseif calc == "ps"
         return calc_wan_ps(cs, k, mill, b1, b2, b3, igwx, nwfc, nxk)

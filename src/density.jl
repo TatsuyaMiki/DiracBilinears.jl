@@ -21,17 +21,17 @@ function calc_density(;calc::String, nrmesh::Tuple, qedir::String, n1::Float64=0
 end
 
 function make_zeros_density(calc::String, nrmesh::Tuple)
-    if calc == "ρ"
+    if calc == "ρ" || calc == "rho"
         return zeros(nrmesh...)
     elseif calc == "ms"
         return zeros(3, nrmesh...)
     elseif calc == "j"
         return zeros(3, nrmesh...)
-    elseif calc == "∇ρ"
+    elseif calc == "∇ρ" || calc == "nabla_rho"
         return zeros(3, nrmesh...)
-    elseif calc == "∇ms"
+    elseif calc == "∇ms" || calc == "nabla_ms"
         return zeros(nrmesh...)
-    elseif calc == "τz" || calc == "chirality"
+    elseif calc == "τz" || calc == "tau_z" || calc == "chirality"
         return zeros(nrmesh...)
     elseif calc == "ps"
         return zeros(3, nrmesh...)
@@ -41,17 +41,17 @@ function make_zeros_density(calc::String, nrmesh::Tuple)
 end
 
 function calc_density_ok(calc::String, nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
-    if calc == "ρ"
+    if calc == "ρ" || calc == "rho"
         return calc_density_ρ(ukn, occ)
     elseif calc == "ms"
         return calc_density_ms(ukn, occ)
     elseif calc == "j"
         return return calc_density_j(nrmesh, wfc, ukn, ∇ukn, occ)
-    elseif calc == "∇ρ"
+    elseif calc == "∇ρ" || calc == "nabla_rho"
         return calc_density_∇ρ(wfc, ukn, ∇ukn, occ)
-    elseif calc == "∇ms"
+    elseif calc == "∇ms" || calc == "nabla_ms"
         return calc_density_∇ms(wfc, ukn, ∇ukn, occ)
-    elseif calc == "τz" || calc == "chirality"
+    elseif calc == "τz" || calc == "tau_z" || calc == "chirality"
         return calc_density_τz(nrmesh, wfc, ukn, ∇ukn, occ)
     elseif calc == "ps"
         return calc_density_ps(nrmesh, wfc, ukn, ∇ukn, occ)
@@ -217,7 +217,7 @@ end
 function write_density(f0::Array{Float64, 3}; qedir::String, savefile::String, atoms::Vector{String}=["none"], atomic_positions::Matrix{Float64}=zeros(3,2), r1::Int=1, r2::Int=1, r3::Int=1)
     xml = read_xml(qedir*"/data-file-schema.xml")
     na1, na2, na3 = size(f0)
-    fplot = zeros(Float64, (na1*r1, na2*r2, na3*r3))
+    fplot = zeros(Float64, (na1*r1+1, na2*r2+1, na3*r3+1))
     for i3 in 1:r3
         for i2 in 1:r2
             for i1 in 1:r1
@@ -225,6 +225,10 @@ function write_density(f0::Array{Float64, 3}; qedir::String, savefile::String, a
             end
         end
     end
+    fplot[end, 1:end-1, 1:end-1] = copy(f0[1,:,:])
+    fplot[1:end-1, end, 1:end-1] = copy(f0[:,1,:])
+    fplot[1:end-1, 1:end-1, end] = copy(f0[:,:,1])
+    fplot[end, end, end] = copy(f0[1,1,1])
     bohr2ang = 0.5291772083
     a1ang = xml.a1.*bohr2ang
     a2ang = xml.a2.*bohr2ang
