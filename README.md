@@ -50,7 +50,7 @@ QE/bin/pw.x < seedname.nscf.in > seedname.nscf.out
 To compute the spatial distribution of electron chirality $\tau^Z(\boldsymbol{r})$ on a uniform $32\times 32\times 32$ spatial mesh ``nrmseh=(32,32,32)``, use the following commands:
 ```Julia
 using DiracBilinears
-τz = calc_density(calc="τz", nrmseh=(32,32,32), qedir=QEDIR)
+τz = calc_density(calc="τz", nrmesh=(32,32,32), qedir=QEDIR)
 ```
 The physical quantities to be calculated can be selected by specifying the option ``calc``, whose list is provided in the following table.
 |``calc`` | Physical quantities |
