@@ -214,7 +214,7 @@ function make_c_k(nrmesh::Tuple, wfc::Wfc; n1::Float64=0.0, n2::Float64=0.0, n3:
     return ck, ∇ck
 end
 
-function write_vesta_plot(f0::Array{Float64, 3}; qedir::String, savefile::String, atoms::Vector{String}=["none"], atomic_positions::Matrix{Float64}=zeros(3,2), r1::Int=1, r2::Int=1, r3::Int=1)
+function write_density(f0::Array{Float64, 3}; qedir::String, savefile::String, atoms::Vector{String}=["none"], atomic_positions::Matrix{Float64}=zeros(3,2), r1::Int=1, r2::Int=1, r3::Int=1)
     xml = read_xml(qedir*"/data-file-schema.xml")
     na1, na2, na3 = size(f0)
     fplot = zeros(Float64, (na1*r1, na2*r2, na3*r3))
