@@ -85,7 +85,7 @@ The physical quantities to be calculated can be selected by specifying the optio
 
 You can generate the xsf file after the ``calc_density()`` calculation:
 ```Julia
-write_vesta_plot(τz; qedir=QEDIR, savefile=FILENAME)
+write_density(τz; qedir=QEDIR, savefile=FILENAME)
 ```
 The file extension of FILENAME must be set to ".xsf".
 
