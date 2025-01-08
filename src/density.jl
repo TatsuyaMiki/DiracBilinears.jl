@@ -1,7 +1,8 @@
 
-function calc_density(;calc::String, nrmesh::Tuple, qedir::String, n1::Float64=0.0, n2::Float64=0.0, n3::Float64=0.0, δμ::Float64=0.0)
-    o = make_zeros_density(calc, nrmesh)
+function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64=0.0, n3::Float64=0.0, nrmesh::Tuple=(0,0,0), δμ::Float64=0.0)
     xml = read_xml(qedir*"/data-file-schema.xml")
+    nrmesh_ = make_nrmesh(xml, nrmesh)
+    o = make_zeros_density(calc, nrmesh_)
     volume = xml.nxk*abs(LA.dot(xml.a3, LA.cross(xml.a1, xml.a2)))
     for ik in 1:xml.nxk
         wfcfile = qedir*"/wfc$(ik).dat"
@@ -11,14 +12,24 @@ function calc_density(;calc::String, nrmesh::Tuple, qedir::String, n1::Float64=0
         occ = zeros(wfc.nbnd)
         occ[idx] .= 1.0
 
-        ck, ∇ck = make_c_k(nrmesh, wfc; n1=n1, n2=n2, n3=n3)
-        ukn = calc_fourier_k(nrmesh, ck)/√(volume)
-        ∇ukn = calc_fourier_k(nrmesh, ∇ck)/√(volume)
-        ok = calc_density_ok(calc, nrmesh, wfc, ukn, ∇ukn, occ)
+        ck, ∇ck = make_c_k(nrmesh_, wfc; n1=n1, n2=n2, n3=n3)
+        ukn = calc_fourier_k(nrmesh_, ck)/√(volume)
+        ∇ukn = calc_fourier_k(nrmesh_, ∇ck)/√(volume)
+        ok = calc_density_ok(calc, nrmesh_, wfc, ukn, ∇ukn, occ)
         o += ok
     end
     return o
 end
+
+function make_nrmesh(xml::Xml, nrmesh::Tuple)
+    if nrmesh == (0,0,0)
+        nrmesh_ = (div(xml.fftgrid[1], 2), div(xml.fftgrid[2], 2), div(xml.fftgrid[3], 2))
+    else
+        nrmesh_ = copy(nrmesh)
+    end
+    return nrmesh_
+end
+
 
 function make_zeros_density(calc::String, nrmesh::Tuple)
     if calc == "ρ" || calc == "rho"

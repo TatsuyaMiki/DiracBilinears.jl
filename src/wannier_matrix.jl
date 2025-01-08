@@ -1,7 +1,7 @@
 
 
-function calc_wannier_matrix(;calc::String, nrs::Tuple, wfndir::String, wandir::String, npol::Int=2)
-    rs = make_rmesh(nrs)
+function calc_wannier_matrix(;calc::String, mpmesh::Tuple, wfndir::String, wandir::String, npol::Int=2)
+    rs = make_rmesh(mpmesh)
 
     rg, rginv, nsymq, nnp = read_symmetry(wfndir*"/dat.symmetry")
     ski, ks, numirr, numrot, trs, rw, nkirr, ntk = read_sample_k(wfndir*"/dat.sample-k", nsymq, rg)
@@ -15,7 +15,7 @@ function calc_wannier_matrix(;calc::String, nrs::Tuple, wfndir::String, wandir::
     iowan = open(wandir*"/dat.wan", "r");
     seek(iowan, 4)
     nwfc = Int(read(iowan, Int32))
-    o = make_zeros_wannier(calc, nrs, nwfc)
+    o = make_zeros_wannier(calc, mpmesh, nwfc)
     ax = axes(o)
     for ik in 1:nxk
         k = ks[:, ik]
@@ -23,7 +23,7 @@ function calc_wannier_matrix(;calc::String, nrs::Tuple, wfndir::String, wandir::
         mill = mills[:, :, ik]
         cs = read_wan(iowan, nwfc, npol, ng)
         otmp = calc_wannier_ok(calc, cs, k, mill, b1, b2, b3, nwfc, ng, nxk)
-        for ir in 1:(nrs[1]*nrs[2]*nrs[3])
+        for ir in 1:(mpmesh[1]*mpmesh[2]*mpmesh[3])
             o[ax[1:end-1]..., ir] += otmp .* exp(-im*2π*LA.dot(k, rs[:, ir]))
         end
     end
@@ -31,17 +31,17 @@ function calc_wannier_matrix(;calc::String, nrs::Tuple, wfndir::String, wandir::
     return o, rs
 end
 
-function make_zeros_wannier(calc::String, nrs::Tuple, nwfc::Int)
+function make_zeros_wannier(calc::String, mpmesh::Tuple, nwfc::Int)
     if calc == "ρ"
-        return zeros(ComplexF64, (nwfc, nwfc, nrs[1]*nrs[2]*nrs[3]))
+        return zeros(ComplexF64, (nwfc, nwfc, mpmesh[1]*mpmesh[2]*mpmesh[3]))
     elseif calc == "ms"
-        return zeros(ComplexF64, (3, nwfc, nwfc, nrs[1]*nrs[2]*nrs[3]))
+        return zeros(ComplexF64, (3, nwfc, nwfc, mpmesh[1]*mpmesh[2]*mpmesh[3]))
     elseif calc == "j"
-        return zeros(ComplexF64, (3, nwfc, nwfc, nrs[1]*nrs[2]*nrs[3]))
+        return zeros(ComplexF64, (3, nwfc, nwfc, mpmesh[1]*mpmesh[2]*mpmesh[3]))
     elseif calc == "τz" || calc == "tau_z" || calc == "chirality"
-        return zeros(ComplexF64, (nwfc, nwfc, nrs[1]*nrs[2]*nrs[3]))
+        return zeros(ComplexF64, (nwfc, nwfc, mpmesh[1]*mpmesh[2]*mpmesh[3]))
     elseif calc == "ps"
-        return zeros(ComplexF64, (3, nwfc, nwfc, nrs[1]*nrs[2]*nrs[3]))
+        return zeros(ComplexF64, (3, nwfc, nwfc, mpmesh[1]*mpmesh[2]*mpmesh[3]))
     else
         @assert false "Invalid value assigned to 'calc'."
     end
@@ -63,16 +63,16 @@ function calc_wannier_ok(calc::String, cs::Array{ComplexF64, 3}, k::Vector{Float
     end
 end
 
-function make_rmesh(nrs::Tuple)
-    nvec = zeros(Int, (3, nrs[1]*nrs[2]*nrs[3]))
+function make_rmesh(mpmesh::Tuple)
+    nvec = zeros(Int, (3, mpmesh[1]*mpmesh[2]*mpmesh[3]))
     ir = 0
-    for ir1 in 1:nrs[1]
-        n1 = ir1 - div(nrs[1], 2) - 1
-        for ir2 in 1:nrs[2]
-            n2 = ir2 - div(nrs[2], 2) - 1
-            for ir3 in 1:nrs[3]
+    for ir1 in 1:mpmesh[1]
+        n1 = ir1 - div(mpmesh[1], 2) - 1
+        for ir2 in 1:mpmesh[2]
+            n2 = ir2 - div(mpmesh[2], 2) - 1
+            for ir3 in 1:mpmesh[3]
                 ir += 1
-                n3 = ir3 - div(nrs[3], 2) - 1
+                n3 = ir3 - div(mpmesh[3], 2) - 1
                 nvec[1, ir] = n1
                 nvec[2, ir] = n2
                 nvec[3, ir] = n3

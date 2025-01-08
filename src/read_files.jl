@@ -23,6 +23,7 @@ struct Xml
     a1::Vector{Float64}
     a2::Vector{Float64}
     a3::Vector{Float64}
+    fftgrid::Vector{Int}
 end
 
 function read_wfc(filename::String)
@@ -79,12 +80,14 @@ function read_xml(filename::String)
     a2 = parse.(Float64, split(EzXML.nodecontent(findfirst("//a2/text()", primates))))
     a3 = parse.(Float64, split(EzXML.nodecontent(findfirst("//a3/text()", primates))))
 
+    fft = findfirst("//fft_grid", primates)
+    fftgrid = parse.(Int, [fft["nr1"], fft["nr2"], fft["nr3"]])
     species = EzXML.nodecontent.(findall("//eigenvalues/text()", primates))
     e = zeros(Float64, (nbnd, nxk))
     for ik in 1:nxk
         e[1:end, ik] = parse.(Float64, split(species[ik]))
     end
     ef = parse(Float64, EzXML.nodecontent(findfirst("//fermi_energy/text()", primates)))
-    return Xml(e, ef, nbnd, nxk, a1, a2, a3)
+    return Xml(e, ef, nbnd, nxk, a1, a2, a3, fftgrid)
 end
 
