@@ -11,7 +11,6 @@ function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64
         idx = findall(x -> x < xml.ef + δμ/au2ev, xml.e[:, ik])
         occ = zeros(wfc.nbnd)
         occ[idx] .= 1.0
-
         ck, ∇ck = make_c_k(nrmesh_, wfc; n1=n1, n2=n2, n3=n3)
         ukn = calc_fourier_k(nrmesh_, ck)/√(volume)
         ∇ukn = calc_fourier_k(nrmesh_, ∇ck)/√(volume)
@@ -151,73 +150,56 @@ function calc_fourier_k(nrmesh::Tuple, ck)
 end
 
 function make_c_k(nrmesh::Tuple, wfc::Wfc; n1::Float64=0.0, n2::Float64=0.0, n3::Float64=0.0)
-    hmax = maximum(wfc.mill[1,:])
-    hmin = minimum(wfc.mill[1,:])
-    kmax = maximum(wfc.mill[2,:])
-    kmin = minimum(wfc.mill[2,:])
-    lmax = maximum(wfc.mill[3,:])
-    lmin = minimum(wfc.mill[3,:])
-    nh = hmax - hmin + 1
-    nk = kmax - kmin + 1
-    nl = lmax - lmin + 1
-    ns1 = nrmesh[1]
-    ns2 = nrmesh[2]
-    ns3 = nrmesh[3]
+    hmin, hmax = extrema(wfc.mill[1,:])
+    kmin, kmax = extrema(wfc.mill[2,:])
+    lmin, lmax = extrema(wfc.mill[3,:])
+    ns1, ns2, ns3 = nrmesh
     i1 = abs(-div(nrmesh[1], 2) - hmin)
     i2 = abs(-div(nrmesh[2], 2) - kmin)
     i3 = abs(-div(nrmesh[3], 2) - lmin)
     if nrmesh[1] == 1
-        ns1 = nh
+        ns1 = hmax - hmin
         i1 = 0
     else
-        @assert nh < nrmesh[1]
+        @assert hmax - hmin < nrmesh[1]
         ns1 = nrmesh[1]
     end
     if nrmesh[2] == 1
-        ns2 = nk
+        ns2 = kmax - kmin
         i2 = 0
     else
-        @assert nk < nrmesh[2]
+        @assert kmax - kmin < nrmesh[2]
         ns2 = nrmesh[2]
     end
     if nrmesh[3] == 1
-        ns3 = nl
+        ns3 = lmax - lmin
         i3 = 0
     else
-        @assert nl < nrmesh[3]
+        @assert lmax - lmin < nrmesh[3]
         ns3 = nrmesh[3]
     end
     cktmp = zeros(ComplexF64, (ns1, ns2, ns3, wfc.nbnd, wfc.npol))
     ∇cktmp = zeros(ComplexF64, (ns1, ns2, ns3, wfc.nbnd, 3, wfc.npol))
-    for ipw in 1:wfc.igwx
-        gvec = wfc.mill[1,ipw]*wfc.b1 + wfc.mill[2,ipw]*wfc.b2 + wfc.mill[3,ipw]*wfc.b3
-        ih = wfc.mill[1,ipw] - hmin + 1
-        ik = wfc.mill[2,ipw] - kmin + 1
-        il = wfc.mill[3,ipw] - lmin + 1
-        epn = 1.0
-        if nrmesh[1] == 1
-            epn = exp(2π*im*n1*wfc.mill[1,ipw])*epn
-        end
-        if nrmesh[2] == 1
-            epn = exp(2π*im*n2*wfc.mill[2,ipw])*epn
-        end
-        if nrmesh[3] == 1
-            epn = exp(2π*im*n3*wfc.mill[3,ipw])*epn
-        end
-        for is in 1:wfc.npol
+    @inbounds for ipw in 1:wfc.igwx
+        gvec = wfc.mill[1, ipw] * wfc.b1 + wfc.mill[2, ipw] * wfc.b2 + wfc.mill[3, ipw] * wfc.b3
+        ih, ik, il = wfc.mill[:, ipw] .- [hmin, kmin, lmin] .+ 1
+        epn = exp(2π * im * (n1 * wfc.mill[1, ipw] * (nrmesh[1] == 1) +
+                             n2 * wfc.mill[2, ipw] * (nrmesh[2] == 1) +
+                             n3 * wfc.mill[3, ipw] * (nrmesh[3] == 1)))
+        @inbounds for is in 1:wfc.npol
             evci = wfc.evc[is, :, ipw]
-            cktmp[i1 + ih, i2 + ik, i3 + il, :, is] = evci*epn
-            for ii in 1:3
-                ∇cktmp[i1 + ih, i2 + ik, i3 + il, :, ii, is] = gvec[ii]*evci*epn
+            cktmp[i1 + ih, i2 + ik, i3 + il, :, is] .= evci * epn
+            @inbounds for ii in 1:3
+                ∇cktmp[i1 + ih, i2 + ik, i3 + il, :, ii, is] .= gvec[ii] * evci * epn
             end
         end
     end
     ck = zeros(ComplexF64, (ns1, ns2, ns3, wfc.nbnd, wfc.npol))
     ∇ck = zeros(ComplexF64, (ns1, ns2, ns3, wfc.nbnd, 3, wfc.npol))
-    for is in 1:wfc.npol
-        for ib in 1:wfc.nbnd
+    @inbounds for is in 1:wfc.npol
+        @inbounds for ib in 1:wfc.nbnd
             ck[:, :, :, ib, is] = FFTW.ifftshift(cktmp[:, :, :, ib, is])
-            for ii in 1:3
+            @inbounds for ii in 1:3
                 ∇ck[:, :, :, ib, ii, is] = FFTW.ifftshift(∇cktmp[:, :, :, ib, ii, is])
             end
         end
