@@ -29,7 +29,7 @@ function calc_wannier_matrix(;calc::String, wfndir::String, wandir::String, rgri
     return o
 end
 
-function calc_rgrid(mpmesh::Tuple)
+function calc_rgrid(;mpmesh::Tuple)
     rgrid = zeros(Int, (3, mpmesh[1]*mpmesh[2]*mpmesh[3]))
     ir = 0
     for ir1 in 1:mpmesh[1]
