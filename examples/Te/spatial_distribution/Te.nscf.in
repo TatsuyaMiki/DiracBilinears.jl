@@ -2,7 +2,7 @@
    calculation = 'nscf'
    prefix = 'Te'
    pseudo_dir = './PP/'
-   outdir='./tmp/nscf/'
+   outdir='./tmp'
    wf_collect=.true.
    tstress = .true.
    tprnfor = .true.

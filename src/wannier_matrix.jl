@@ -1,7 +1,12 @@
 
 
-function calc_wannier_matrix(;calc::String, mpmesh::Tuple, wfndir::String, wandir::String, npol::Int=2)
-    rs = make_rmesh(mpmesh)
+function calc_wannier_matrix(;calc::String, wfndir::String, wandir::String, npol::Int=2, mpmesh::Tuple=(0,0,0), rgrid::Matrix{Int}=zeros(Int, (3, 1)))
+    rs = rgrid
+    if size(rgrid) == (3, 1)
+        rs = make_rmesh(mpmesh)
+    else
+        @assert mpmesh == (0,0,0) "The input for R is valid only for either mpmesh or rgrid."
+    end
 
     rg, rginv, nsymq, nnp = read_symmetry(wfndir*"/dat.symmetry")
     ski, ks, numirr, numrot, trs, rw, nkirr, ntk = read_sample_k(wfndir*"/dat.sample-k", nsymq, rg)
