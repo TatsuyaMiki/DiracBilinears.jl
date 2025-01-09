@@ -7,6 +7,7 @@ function calc_wannier_matrix(;calc::String, wfndir::String, wandir::String, npol
     else
         @assert mpmesh == (0,0,0) "The input for R is valid only for either mpmesh or rgrid."
     end
+    nr = length(rs[1, :])
 
     rg, rginv, nsymq, nnp = read_symmetry(wfndir*"/dat.symmetry")
     ski, ks, numirr, numrot, trs, rw, nkirr, ntk = read_sample_k(wfndir*"/dat.sample-k", nsymq, rg)
@@ -20,7 +21,7 @@ function calc_wannier_matrix(;calc::String, wfndir::String, wandir::String, npol
     iowan = open(wandir*"/dat.wan", "r");
     seek(iowan, 4)
     nwfc = Int(read(iowan, Int32))
-    o = make_zeros_wannier(calc, mpmesh, nwfc)
+    o = make_zeros_wannier(calc, nr, nwfc)
     ax = axes(o)
     for ik in 1:nxk
         k = ks[:, ik]
@@ -28,7 +29,7 @@ function calc_wannier_matrix(;calc::String, wfndir::String, wandir::String, npol
         mill = mills[:, :, ik]
         cs = read_wan(iowan, nwfc, npol, ng)
         otmp = calc_wannier_ok(calc, cs, k, mill, b1, b2, b3, nwfc, ng, nxk)
-        for ir in 1:(mpmesh[1]*mpmesh[2]*mpmesh[3])
+        for ir in 1:nr
             o[ax[1:end-1]..., ir] += otmp .* exp(-im*2π*LA.dot(k, rs[:, ir]))
         end
     end
@@ -36,17 +37,17 @@ function calc_wannier_matrix(;calc::String, wfndir::String, wandir::String, npol
     return o, rs
 end
 
-function make_zeros_wannier(calc::String, mpmesh::Tuple, nwfc::Int)
+function make_zeros_wannier(calc::String, nr::Int, nwfc::Int)
     if calc == "ρ"
-        return zeros(ComplexF64, (nwfc, nwfc, mpmesh[1]*mpmesh[2]*mpmesh[3]))
+        return zeros(ComplexF64, (nwfc, nwfc, nr))
     elseif calc == "ms"
-        return zeros(ComplexF64, (3, nwfc, nwfc, mpmesh[1]*mpmesh[2]*mpmesh[3]))
+        return zeros(ComplexF64, (3, nwfc, nwfc, nr))
     elseif calc == "j"
-        return zeros(ComplexF64, (3, nwfc, nwfc, mpmesh[1]*mpmesh[2]*mpmesh[3]))
+        return zeros(ComplexF64, (3, nwfc, nwfc, nr))
     elseif calc == "τz" || calc == "tau_z" || calc == "chirality"
-        return zeros(ComplexF64, (nwfc, nwfc, mpmesh[1]*mpmesh[2]*mpmesh[3]))
+        return zeros(ComplexF64, (nwfc, nwfc, nr))
     elseif calc == "ps"
-        return zeros(ComplexF64, (3, nwfc, nwfc, mpmesh[1]*mpmesh[2]*mpmesh[3]))
+        return zeros(ComplexF64, (3, nwfc, nwfc, nr))
     else
         @assert false "Invalid value assigned to 'calc'."
     end
