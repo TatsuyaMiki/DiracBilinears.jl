@@ -47,14 +47,14 @@ end
     @test isapprox(∇ck, zeros(ComplexF64, (4, 4, 4, 2, 3, 2)), atol=1e-12)
 end
 
-@testset "r-mesh" begin
-    n111 = DB.make_rmesh((1, 1, 1))
+@testset "R-grid" begin
+    n111, degen1 = DB.calc_rgrid(mpmesh=(1, 1, 1))
     @test n111[:, 1] == [0, 0, 0]
-    n222 = DB.make_rmesh((2, 2, 2))
+    n222, degen2 = DB.calc_rgrid(mpmesh=(2, 2, 2))
     @test n222[:, 1] == [-1, -1, -1]
     @test n222[:, 2] == [-1, -1, 0]
     @test n222[:, end] == [0, 0, 0]
-    n333 = DB.make_rmesh((3, 3, 3))
+    n333, degen3 = DB.calc_rgrid(mpmesh=(3, 3, 3))
     @test n333[:, 1] == [-1, -1, -1]
     @test n333[:, 2] == [-1, -1, 0]
     @test n333[:, 3] == [-1, -1, 1]
