@@ -207,8 +207,22 @@ function make_c_k(nrmesh::Tuple, wfc::Wfc; n1::Float64=0.0, n2::Float64=0.0, n3:
     return ck, ∇ck
 end
 
-function write_density(f0::Array{Float64, 3}; qedir::String, savefile::String, atoms::Vector{String}=["none"], atomic_positions::Matrix{Float64}=zeros(3,2))
-    xml = read_xml(qedir*"/data-file-schema.xml")
+function write_density(f0::Array{Float64, 3}; qedir::String="manual", savefile::String, atoms::Vector{String}=["none"], atomic_positions::Matrix{Float64}=zeros(3,2), a1::Vector{Float64}=zeros(Float64, 3), a2::Vector{Float64}=zeros(Float64, 3), a3::Vector{Float64}=zeros(Float64, 3))
+    bohr2ang = 0.5291772083
+    a1ang = zeros(Float64, 3)
+    a2ang = zeros(Float64, 3)
+    a3ang = zeros(Float64, 3)
+    if qedir == "manual"
+        a1ang = a1.*bohr2ang
+        a2ang = a2.*bohr2ang
+        a3ang = a3.*bohr2ang
+    else
+        @assert a1 == zeros(Float64, 3) && a2 == zeros(Float64, 3) && a3 == zeros(Float64, 3)
+        xml = read_xml(qedir*"/data-file-schema.xml")
+        a1ang = xml.a1.*bohr2ang
+        a2ang = xml.a2.*bohr2ang
+        a3ang = xml.a3.*bohr2ang
+    end
     na1, na2, na3 = size(f0)
     fplot = zeros(Float64, (na1+1, na2+1, na3+1))
     fplot[1:end-1, 1:end-1, 1:end-1] = copy(f0)
@@ -219,10 +233,6 @@ function write_density(f0::Array{Float64, 3}; qedir::String, savefile::String, a
     fplot[end, 1:end-1, end] = copy(f0[1,:,1])
     fplot[end, end, 1:end-1] = copy(f0[1,1,:])
     fplot[end, end, end] = copy(f0[1,1,1])
-    bohr2ang = 0.5291772083
-    a1ang = xml.a1.*bohr2ang
-    a2ang = xml.a2.*bohr2ang
-    a3ang = xml.a3.*bohr2ang
     io = open(savefile, "w")
     PF.@printf(io, "%2s\n", "# Written on "*"$(Dates.now())")
     PF.@printf(io, "%2s\n", "CRYSTAL")

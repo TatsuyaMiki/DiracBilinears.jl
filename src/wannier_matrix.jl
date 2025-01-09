@@ -1,14 +1,5 @@
 
-
-function calc_wannier_matrix(;calc::String, wfndir::String, wandir::String, npol::Int=2, mpmesh::Tuple=(0,0,0), rgrid::Matrix{Int}=zeros(Int, (3, 1)))
-    rs = rgrid
-    if size(rgrid) == (3, 1)
-        rs = make_rmesh(mpmesh)
-    else
-        @assert mpmesh == (0,0,0) "The input for R is valid only for either mpmesh or rgrid."
-    end
-    nr = length(rs[1, :])
-
+function calc_wannier_matrix(;calc::String, wfndir::String, wandir::String, rgrid::Matrix{Int}, npol::Int=2)
     rg, rginv, nsymq, nnp = read_symmetry(wfndir*"/dat.symmetry")
     ski, ks, numirr, numrot, trs, rw, nkirr, ntk = read_sample_k(wfndir*"/dat.sample-k", nsymq, rg)
     ngi, ntg = read_nkm(wfndir*"/dat.nkm", nkirr)
@@ -18,6 +9,7 @@ function calc_wannier_matrix(;calc::String, wfndir::String, wandir::String, npol
     ecut4psi = calc_ecut_for_ψ(kgi, ntg, nkirr, ngi, ski, b1, b2, b3)
     ngs, mills = calc_kg0s(ecut4psi, rg, rw, ngi, ntg, trs, ski, b1, b2, b3, ntk, numirr, numrot)
     nxk = length(ngs)
+    nr = size(rgrid)[2]
     iowan = open(wandir*"/dat.wan", "r");
     seek(iowan, 4)
     nwfc = Int(read(iowan, Int32))
@@ -30,11 +22,59 @@ function calc_wannier_matrix(;calc::String, wfndir::String, wandir::String, npol
         cs = read_wan(iowan, nwfc, npol, ng)
         otmp = calc_wannier_ok(calc, cs, k, mill, b1, b2, b3, nwfc, ng, nxk)
         for ir in 1:nr
-            o[ax[1:end-1]..., ir] += otmp .* exp(-im*2π*LA.dot(k, rs[:, ir]))
+            o[ax[1:end-1]..., ir] += otmp .* exp(-im*2π*LA.dot(k, rgrid[:, ir]))
         end
     end
     close(iowan)
-    return o, rs
+    return o
+end
+
+function calc_rgrid(mpmesh::Tuple)
+    rgrid = zeros(Int, (3, mpmesh[1]*mpmesh[2]*mpmesh[3]))
+    ir = 0
+    for ir1 in 1:mpmesh[1]
+        n1 = ir1 - div(mpmesh[1], 2) - 1
+        for ir2 in 1:mpmesh[2]
+            n2 = ir2 - div(mpmesh[2], 2) - 1
+            for ir3 in 1:mpmesh[3]
+                ir += 1
+                n3 = ir3 - div(mpmesh[3], 2) - 1
+                rgrid[1, ir] = n1
+                rgrid[2, ir] = n2
+                rgrid[3, ir] = n3
+            end
+        end
+    end
+    degen = ones(Int, mpmesh[1]*mpmesh[2]*mpmesh[3])
+    return rgrid, degen
+end
+
+function read_hrdat_rgrid(filename::String)
+    open(filename, "r") do io
+        str = readline(io) # comment
+        norb = parse(Int, readline(io)) # norb
+        nr = parse(Int, readline(io)) # nr
+        degen = zeros(Int, nr)
+        rgrid = zeros(Int, (3, nr))
+        for i in 1:div(nr, 15)
+            d = parse.(Int, split(readline(io)))
+            degen[(i-1)*15+1:i*15] = d
+        end
+        if 1 * (nr%15 != 0) == 1
+            d = parse.(Int, split(readline(io)))
+            degen[div(nr, 15)*15+1:end] = d
+        end
+        ir = 0
+        for i in 1:nr*norb*norb
+            str = readline(io)
+            dat = parse.(Int, split(str)[1:5])
+            if dat[4] == 1 && dat[5] == 1
+                ir += 1
+                rgrid[:, ir] = dat[1:3]
+            end
+        end
+        return rgrid, degen
+    end
 end
 
 function make_zeros_wannier(calc::String, nr::Int, nwfc::Int)
@@ -67,25 +107,6 @@ function calc_wannier_ok(calc::String, cs::Array{ComplexF64, 3}, k::Vector{Float
     else
         @assert false "Invalid value assigned to 'calc'."
     end
-end
-
-function make_rmesh(mpmesh::Tuple)
-    nvec = zeros(Int, (3, mpmesh[1]*mpmesh[2]*mpmesh[3]))
-    ir = 0
-    for ir1 in 1:mpmesh[1]
-        n1 = ir1 - div(mpmesh[1], 2) - 1
-        for ir2 in 1:mpmesh[2]
-            n2 = ir2 - div(mpmesh[2], 2) - 1
-            for ir3 in 1:mpmesh[3]
-                ir += 1
-                n3 = ir3 - div(mpmesh[3], 2) - 1
-                nvec[1, ir] = n1
-                nvec[2, ir] = n2
-                nvec[3, ir] = n3
-            end
-        end
-    end
-    return nvec
 end
 
 function calc_b(a1::Vector{Float64}, a2::Vector{Float64}, a3::Vector{Float64})
@@ -143,22 +164,21 @@ function calc_wan_ps(cs::Array{ComplexF64, 3}, k::Vector{Float64}, mill::Matrix{
     return psk
 end
 
-function write_wannier_matrix(hr::Array{ComplexF64, 3}, rs::Matrix{Int}; savefile::String)
+function write_wannier_matrix(hr::Array{ComplexF64, 3}, rs::Matrix{Int}, degen::Vector{Int}; savefile::String)
     nr::Int = size(rs)[2]
     nwfc::Int = size(hr)[1]
     io = open(savefile,"w")
     PF.@printf(io, "%2s\n", "Written on "*"$(Dates.now())")
     PF.@printf(io, "%10d\n", nwfc)
     PF.@printf(io, "%10d\n", nr)
-    for i in 1:div(nr, 15)
-        PF.@printf(io, "%5d%5d%5d%5d%5d%5d%5d%5d%5d%5d%5d%5d%5d%5d%5d\n", 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
-    end
-    if nr%15 != 0
-        for i in 1:nr%15-1
-            PF.@printf(io, "%5d", 1)
+    for ir in 1:nr-1
+        if ir % 15 == 0
+            PF.@printf(io, "%5d\n", degen[ir])
+        else
+            PF.@printf(io, "%5d", degen[ir])
         end
-        PF.@printf(io, "%5d\n", 1)
     end
+    PF.@printf(io, "%5d\n", degen[end])
     for ir in 1:nr
         for m in 1:nwfc
             for n in 1:nwfc
