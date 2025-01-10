@@ -21,10 +21,9 @@ function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64
 end
 
 function make_nrmesh(xml::Xml, nrmesh::Tuple=(0,0,0))
+    nrmesh_ = copy(nrmesh)
     if nrmesh == (0,0,0)
         nrmesh_ = (div(xml.fftgrid[1], 2), div(xml.fftgrid[2], 2), div(xml.fftgrid[3], 2))
-    else
-        nrmesh_ = copy(nrmesh)
     end
     return nrmesh_
 end
