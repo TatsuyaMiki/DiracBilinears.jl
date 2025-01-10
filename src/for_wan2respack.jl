@@ -26,10 +26,10 @@ function read_symmetry(filename::String)
 end
 
 
-function read_nkm(filename::String, Nk_irr::Int)
-    ngi = zeros(Int, Nk_irr)
+function read_nkm(filename::String, nkirr::Int)
+    ngi = zeros(Int, nkirr)
     io = open(filename, "r");
-    for ik in 1:Nk_irr
+    for ik in 1:nkirr
         ngi[ik] = parse(Int, readline(io))
     end
     close(io)
@@ -37,32 +37,32 @@ function read_nkm(filename::String, Nk_irr::Int)
     return ngi, ntg
 end
 
-function make_kg0(NTG::Int, b1::Vector{Float64}, b2::Vector{Float64}, b3::Vector{Float64}, Gcut::Float64, q::Vector{Float64}, NGL::Int)
-    KG0 = zeros(Int, (3, NTG))
+function make_kg0(ntg::Int, b1::Vector{Float64}, b2::Vector{Float64}, b3::Vector{Float64}, gcut::Float64, q::Vector{Float64}, ngl::Int)
+    kg0 = zeros(Int, (3, ntg))
     qgL = zeros(3)
-    igL = 0
-    for igL1 in -NGL:NGL
-        for igL2 in -NGL:NGL
-            for igL3 in -NGL:NGL
-                qgL = (q[1] + igL1)*b1 + (q[2] + igL2)*b2 + (q[3] + igL3)*b3    
+    igl = 0
+    for igl1 in -ngl:ngl
+        for igl2 in -ngl:ngl
+            for igl3 in -ngl:ngl
+                qgL = (q[1] + igl1)*b1 + (q[2] + igl2)*b2 + (q[3] + igl3)*b3    
                 qgL2 = qgL[1]^2 + qgL[2]^2 + qgL[3]^2
-                if qgL2 <= Gcut
-                    igL=igL+1
-                    KG0[1,igL] = igL1
-                    KG0[2,igL] = igL2
-                    KG0[3,igL] = igL3 
+                if qgL2 <= gcut
+                    igl=igl+1
+                    kg0[1,igl] = igl1
+                    kg0[2,igl] = igl2
+                    kg0[3,igl] = igl3 
                 end
             end
         end
     end
-    NG = igL
-    return KG0, NG
+    ng = igl
+    return kg0, ng
 end
 
-function read_kg(filename::String, ngi::Vector{Int}, ntg::Int, Nk_irr::Int)
+function read_kg(filename::String, ngi::Vector{Int}, ntg::Int, nkirr::Int)
     io = open(filename, "r");
-    kgi = zeros(Int, 3, ntg, Nk_irr)
-    for ik in 1:Nk_irr
+    kgi = zeros(Int, 3, ntg, nkirr)
+    for ik in 1:nkirr
         ngiref = parse(Int, readline(io))
         @assert ngiref == ngi[ik]
         for ig in 1:ngiref
@@ -73,36 +73,36 @@ function read_kg(filename::String, ngi::Vector{Int}, ntg::Int, Nk_irr::Int)
     return kgi
 end
 
-function calc_ecut_for_ψ(kgi::Array{Int, 3}, ntg::Int, Nk_irr::Int, ngi::Vector{Int}, ski::Matrix{Float64}, b1::Vector{Float64}, b2::Vector{Float64}, b3::Vector{Float64})
-    LKGI = zeros(ntg, Nk_irr)
+function calc_ecut_for_ψ(kgi::Array{Int, 3}, ntg::Int, nkirr::Int, ngi::Vector{Int}, ski::Matrix{Float64}, b1::Vector{Float64}, b2::Vector{Float64}, b3::Vector{Float64})
+    lkgi = zeros(ntg, nkirr)
     ecut = 0.0
-    for ik in 1:Nk_irr
+    for ik in 1:nkirr
         for ig in 1:ngi[ik]
             ktmp = (ski[1,ik] + kgi[1,ig,ik])*b1 + (ski[2,ik] + kgi[2,ig,ik])*b2 + (ski[3,ik] + kgi[3,ig,ik])*b3
-            LKGI[ig,ik] = ktmp[1]^2 + ktmp[2]^2 + ktmp[3]^2
+            lkgi[ig,ik] = ktmp[1]^2 + ktmp[2]^2 + ktmp[3]^2
         end
-        ecut = maximum(LKGI) + 1e-8
+        ecut = maximum(lkgi) + 1e-8
     end
     return ecut
 end
 
-function calc_kg0s(Gcut::Float64, rg::Array{Int, 3}, RW::Matrix{Int}, ngi::Vector{Int}, ntg::Int, trs::Vector{Int}, ski::Matrix{Float64}, b1::Vector{Float64}, b2::Vector{Float64}, b3::Vector{Float64}, NTK::Int, numirr::Vector{Int}, numrot::Vector{Int})
+function calc_kg0s(gcut::Float64, rg::Array{Int, 3}, rw::Matrix{Int}, ngi::Vector{Int}, ntg::Int, trs::Vector{Int}, ski::Matrix{Float64}, b1::Vector{Float64}, b2::Vector{Float64}, b3::Vector{Float64}, ntk::Int, numirr::Vector{Int}, numrot::Vector{Int})
     bmin = minimum([LA.norm(b1, 2), LA.norm(b2, 2), LA.norm(b3, 2)])
-    NGL = round(Int, √(Gcut) / bmin) + 10
-    ng0 = zeros(Int, NTK)
-    kg0 = zeros(Int, (3, ntg, NTK))
-    KGtmp = zeros(Int, (3,ntg))
-    for jk in 1:NTK
+    ngl = round(Int, √(gcut) / bmin) + 10
+    ng0 = zeros(Int, ntk)
+    kg0 = zeros(Int, (3, ntg, ntk))
+    kgtmp = zeros(Int, (3,ntg))
+    for jk in 1:ntk
         ik = numirr[jk]
         iop = numrot[jk]
-        ktmp = rg[:,1,iop]*ski[1,ik] + rg[:,2,iop]*ski[2,ik] + rg[:,3,iop]*ski[3,ik] + RW[:,jk]
-        KGtmp, NG_for_psi = make_kg0(ntg,b1,b2,b3, Gcut, ktmp, NGL)
-        @assert NG_for_psi == ngi[ik] "ERROR; NG_for_psi should be NGI[ik]"
-        ng0[jk] = NG_for_psi
+        ktmp = rg[:,1,iop]*ski[1,ik] + rg[:,2,iop]*ski[2,ik] + rg[:,3,iop]*ski[3,ik] + rw[:,jk]
+        kgtmp, ngψ = make_kg0(ntg,b1,b2,b3, gcut, ktmp, ngl)
+        @assert ngψ == ngi[ik] "ERROR; ngψ should be ngI[ik]"
+        ng0[jk] = ngψ
         if trs[jk]==1
-            kg0[:,:,jk] = KGtmp
+            kg0[:,:,jk] = kgtmp
         elseif trs[jk] == -1
-            kg0[:,:,jk] = -KGtmp # notice on - sign 
+            kg0[:,:,jk] = -kgtmp # notice on - sign 
         end
     end
     return ng0, kg0
@@ -110,181 +110,181 @@ end
 
 
 function kcheck(ktmp::Vector{Float64})
-    RWtmp = zeros(Int, 3)
+    rwtmp = zeros(Int, 3)
     δbz = 1.0e-6
     for i in 1:3
         if ktmp[i] > 1.50 + δbz
             ktmp[i] += - 2.0
-            RWtmp[i] = -2
+            rwtmp[i] = -2
         end 
         if ktmp[i] > 0.50 + δbz
             ktmp[i] += - 1.0
-            RWtmp[i] = -1
+            rwtmp[i] = -1
         end
         if ktmp[i] <= -1.50 + δbz
             ktmp[i] += 2.0
-            RWtmp[i] = 2 
+            rwtmp[i] = 2 
         end
         if ktmp[i] <= -0.5 + δbz
             ktmp[i] += 1.0
-            RWtmp[i] = 1
+            rwtmp[i] = 1
         end
     end
-    return ktmp, RWtmp
+    return ktmp, rwtmp
 end
 
 function kcheck_trs(ktmp::Vector{Float64})
-    RWtmp = zeros(Int, 3)
+    rwtmp = zeros(Int, 3)
     δbz = -1.0e-6
     for i in 1:3
         if ktmp[i] >= 1.50 + δbz
             ktmp[i] += -2.0
-            RWtmp[i] = -2
+            rwtmp[i] = -2
         end 
         if ktmp[i] >= 0.50 + δbz 
             ktmp[i] += -1.0
-            RWtmp[i] = -1
+            rwtmp[i] = -1
         end 
         if ktmp[i] < -1.50 + δbz 
             ktmp[i] = ktmp[1]+2.0
-            RWtmp[i] = 2 
+            rwtmp[i] = 2 
         end
         if ktmp[i] < -0.50 + δbz 
             ktmp[i] += 1.0
-            RWtmp[i] = 1
+            rwtmp[i] = 1
         end
     end
-    return ktmp, RWtmp
+    return ktmp, rwtmp
 end
 
 
-function est_NTK(Nk_irr::Int, Nsymq::Int, ski::Matrix{Float64}, rg::Array{Int, 3})
-    N=Nk_irr*Nsymq*2
-    # SK0
-    SK0 = zeros(3, N)
+function est_ntk(nkirr::Int, nsymq::Int, ski::Matrix{Float64}, rg::Array{Int, 3})
+    n=nkirr*nsymq*2
+    # sk0
+    sk0 = zeros(3, n)
     jk=0
-    for ik in 1:Nk_irr
-        for iop in 1:Nsymq
+    for ik in 1:nkirr
+        for iop in 1:nsymq
             ktmp = rg[:,1,iop]*ski[1,ik] + rg[:,2,iop]*ski[2,ik] + rg[:,3,iop]*ski[3,ik]
-            ktmp, RWtmp = kcheck(ktmp) # rewind check 
+            ktmp, rwtmp = kcheck(ktmp) # rewind check 
             flag1000 = false
             for iik in 1:jk
-                if abs(SK0[1,iik] - ktmp[1]) < 1e-4 && abs(SK0[2,iik] - ktmp[2])<1e-4 && abs(SK0[3,iik] - ktmp[3]) < 1e-4
+                if abs(sk0[1,iik] - ktmp[1]) < 1e-4 && abs(sk0[2,iik] - ktmp[2])<1e-4 && abs(sk0[3,iik] - ktmp[3]) < 1e-4
                     flag1000 = true
                     break
                 end
             end
             if flag1000 == false
                 jk = jk + 1
-                SK0[:,jk] = -ktmp
+                sk0[:,jk] = -ktmp
             end
             ktmp = rg[:,1,iop]*ski[1,ik] + rg[:,2,iop]*ski[2,ik] + rg[:,3,iop]*ski[3,ik]
-            ktmp, RWtmp = kcheck_trs(ktmp) # rewind check 
+            ktmp, rwtmp = kcheck_trs(ktmp) # rewind check 
             flag2000 = false
             for iik in 1:jk
-                if maximum(abs, SK0[:,iik] - ktmp) < 1e-4
+                if maximum(abs, sk0[:,iik] - ktmp) < 1e-4
                     flag2000 = true
                     break
                 end
             end
             if flag2000 == false
                 jk = jk + 1
-                SK0[:,jk] = ktmp
+                sk0[:,jk] = ktmp
             end
         end
     end
-    NTK = jk
-    if NTK > N
-        @assert false "Estimated NTK is too large; stop"
+    ntk = jk
+    if ntk > n
+        @assert false "Estimated ntk is too large; stop"
     end
-    return SK0, NTK
+    return sk0, ntk
 end
 
-function est_nkbi(N::Int, SK::Matrix{Float64}) 
+function est_nkbi(n::Int, sk::Matrix{Float64}) 
     nkb = zeros(Int, 3)
     for b in 1:3
         x = 1.0
-        for i in 1:N
-            if abs(SK[b,i]) < 1e-7
+        for i in 1:n
+            if abs(sk[b,i]) < 1e-7
                 continue
             end
-            if abs(SK[b,i]) < x
-                x = abs(SK[b,i])  
+            if abs(sk[b,i]) < x
+                x = abs(sk[b,i])  
             end
         end
         nkb[b] = round(Int, 1.0 / x)
     end
-    NTK = nkb[1] * nkb[2] * nkb[3]
-    return NTK
+    ntk = nkb[1] * nkb[2] * nkb[3]
+    return ntk
 end 
 
 function read_sample_k(filename::String, nsymq::Int, rg::Array{Int, 3})
     io = open(filename, "r");
-    Nk_irr = parse(Int, readline(io))
-    ski = zeros(3, Nk_irr)
-    for ik in 1:Nk_irr
+    nkirr = parse(Int, readline(io))
+    ski = zeros(3, nkirr)
+    for ik in 1:nkirr
         ski[:, ik] = parse.(Float64, split(readline(io)))
     end
     close(io)
 
-    SK0, NTK = est_NTK(Nk_irr,nsymq,ski,rg)
+    sk0, ntk = est_ntk(nkirr,nsymq,ski,rg)
     #--
-    # SK0,numirr,numrot,trs,RW
-    SK0 = zeros(3,NTK)
-    numirr = zeros(Int, NTK)
-    numrot = zeros(Int, NTK)
-    trs = zeros(Int, NTK)
-    RW = zeros(Int, (3,NTK))
-    numMK = zeros(Int, Nk_irr)
+    # sk0,numirr,numrot,trs,rw
+    sk0 = zeros(3,ntk)
+    numirr = zeros(Int, ntk)
+    numrot = zeros(Int, ntk)
+    trs = zeros(Int, ntk)
+    rw = zeros(Int, (3,ntk))
+    nummk = zeros(Int, nkirr)
     jk = 0
-    for ik in 1:Nk_irr
+    for ik in 1:nkirr
         initial_flg = 0
         for iop in 1:nsymq
             # sym
             ktmp = rg[:,1,iop]*ski[1,ik] + rg[:,2,iop]*ski[2,ik] + rg[:,3,iop]*ski[3,ik]
-            ktmp, RWtmp = kcheck(ktmp) # rewind check
+            ktmp, rwtmp = kcheck(ktmp) # rewind check
             flag1000 = false
             for iik in 1:jk
-                if maximum(abs, SK0[:,iik] - ktmp) < 1e-4
+                if maximum(abs, sk0[:,iik] - ktmp) < 1e-4
                     flag1000 = true
                     break
                 end
             end
             if flag1000 == false
                 jk += 1
-                SK0[:,jk] = ktmp
+                sk0[:,jk] = ktmp
                 numirr[jk] = ik
                 numrot[jk] = iop
                 trs[jk] = 1
-                RW[:,jk] = RWtmp
+                rw[:,jk] = rwtmp
                 if initial_flg == 0
-                    numMK[ik] = jk
+                    nummk[ik] = jk
                     initial_flg = 1
                 end
             end
             # time-reversal
             ktmp = rg[:,1,iop]*ski[1,ik] + rg[:,2,iop]*ski[2,ik] + rg[:,3,iop]*ski[3,ik]
-            ktmp, RWtmp = kcheck_trs(ktmp) # rewind check
+            ktmp, rwtmp = kcheck_trs(ktmp) # rewind check
             flag2000 = false
             for iik = 1:jk
-                if maximum(abs, SK0[:,iik] + ktmp) < 1e-4
+                if maximum(abs, sk0[:,iik] + ktmp) < 1e-4
                     flag2000 = true
                     break
                 end
             end
             if flag2000 == false
                 jk += 1
-                SK0[:,jk] = -ktmp 
+                sk0[:,jk] = -ktmp 
                 numirr[jk] = ik
                 numrot[jk] = iop
                 trs[jk] = -1
-                RW[:,jk] = RWtmp 
+                rw[:,jk] = rwtmp 
             end
         end
     end
-    NTK = est_nkbi(NTK, SK0)
-    @assert NTK == jk "ERROR; NTK(=$(NTK)) should be jk(=$(jk))"
-    return ski, SK0, numirr, numrot, trs, RW, Nk_irr, NTK
+    ntk = est_nkbi(ntk, sk0)
+    @assert ntk == jk "ERROR; ntk(=$(ntk)) should be jk(=$(jk))"
+    return ski, sk0, numirr, numrot, trs, rw, nkirr, ntk
 end
 
 

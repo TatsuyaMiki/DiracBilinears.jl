@@ -20,7 +20,7 @@ function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64
     return o
 end
 
-function make_nrmesh(xml::Xml, nrmesh::Tuple)
+function make_nrmesh(xml::Xml, nrmesh::Tuple=(0,0,0))
     if nrmesh == (0,0,0)
         nrmesh_ = (div(xml.fftgrid[1], 2), div(xml.fftgrid[2], 2), div(xml.fftgrid[3], 2))
     else
