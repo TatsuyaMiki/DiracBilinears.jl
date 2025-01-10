@@ -1,5 +1,5 @@
 [base]
-QE_output_dir = "./tmp/scf/Te.save"
+QE_output_dir = "./tmp/Te.save"
 seedname = "Te"
 
 [pre.ref]

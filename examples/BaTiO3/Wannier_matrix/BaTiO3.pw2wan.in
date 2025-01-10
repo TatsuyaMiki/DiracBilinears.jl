@@ -1,5 +1,5 @@
 &inputpp
-    outdir='./tmp/scf'
+    outdir='./tmp'
     prefix='BaTiO3',
     seedname = 'BaTiO3'
     spin_component = 'none'

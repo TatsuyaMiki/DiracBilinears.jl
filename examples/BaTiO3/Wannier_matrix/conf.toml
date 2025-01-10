@@ -1,5 +1,5 @@
 [base]
-QE_output_dir = "./tmp/scf/BaTiO3.save"
+QE_output_dir = "./tmp/BaTiO3.save"
 seedname = "BaTiO3"
 
 [pre.ref]
