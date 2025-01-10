@@ -5,7 +5,7 @@
    tstress = .true.,
    tprnfor = .true.,
    pseudo_dir = './PP/'
-   outdir='./tmp/scf'
+   outdir='./tmp'
 /
 &system
   ibrav= 6, 
