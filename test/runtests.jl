@@ -44,7 +44,7 @@ end
     wfc = DB.Wfc(1, [0.0, 0.0, 0.0], 2, false, 1.0, 2, 2, 2, 2, [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], mill, evc)
     ck, ∇ck = DB.make_c_k((4, 4, 4), wfc)
     @test size(ck) == (4, 4, 4, 2, 2)
-    @test isapprox(∇ck, zeros(ComplexF64, (4, 4, 4, 2, 3, 2)), atol=1e-12)
+    @test isapprox(∇ck, zeros(ComplexF64, (4, 4, 4, 2, 2, 3)), atol=1e-12)
 end
 
 @testset "R-grid" begin
