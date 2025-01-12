@@ -70,62 +70,62 @@ function calc_density_ok(calc::String, nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ
 end
 
 function calc_density_ρ(ukn, occ::Vector{Float64})
-    return ES.ein"xyzbs,b->xyz"(abs2.(ukn), occ)
+    return ES.ein"xyzsb,b->xyz"(abs2.(ukn), occ)
 end
 
 function calc_density_ms(ukn, occ::Vector{Float64})
-    return ES.ein"xyzbs,sti,xyzbt,b->ixyz"(conj.(ukn), σ, ukn, occ)
+    return ES.ein"xyzsb,sti,xyztb,b->ixyz"(conj.(ukn), σ, ukn, occ)
 end
 
 function calc_density_∇ρ(wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
     @inbounds for ib in 1:wfc.nbnd
-        ukn[:, :, :, ib, :] .*= occ[ib]
+        ukn[:, :, :, :, ib] .*= occ[ib]
     end
-    return 2.0*imag.(ES.ein"ixyzbs,xyzbs->xyzsti"(conj.(∇ukn), ukn))
+    return 2.0*imag.(ES.ein"xyzsbi,xyzsb->ixyz"(conj.(∇ukn), ukn))
 end
 
 function calc_density_∇ms(wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
     @inbounds for ib in 1:wfc.nbnd
-        ukn[:, :, :, ib, :] .*= occ[ib]
+        ukn[:, :, :, :, ib] .*= occ[ib]
     end
-    return 2.0*imag.(ES.ein"ixyzbs,ist,xyzbt->xyz"(conj.(∇ukn), σ, ukn))
+    return 2.0*imag.(ES.ein"xyzsbi,sti,xyztb->xyz"(conj.(∇ukn), σ, ukn))
 end
 
 function calc_density_j(nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
     @assert wfc.npol == 2
-    kudu = zeros(ComplexF64, (3, nrmesh..., wfc.nbnd, wfc.npol))
+    kudu = zeros(ComplexF64, (3, nrmesh..., wfc.npol, wfc.nbnd))
     for ix in 1:3
-        kudu[ix, :, :, :, :, :] = wfc.xk[ix]*ukn[:, :, :, :, :] .+ ∇ukn[:, :, :, :, ix, :]
+        kudu[ix, :, :, :, :, :] = wfc.xk[ix]*ukn[:, :, :, :, :] .+ ∇ukn[:, :, :, :, :, ix]
     end
     @inbounds for ib in 1:wfc.nbnd
-        ukn[:, :, :, ib, :] .*= occ[ib]
+        ukn[:, :, :, :, ib] .*= occ[ib]
     end
-    return 2.0*real.(ES.ein"xyzbs,ixyzbs->ixyz"(conj.(ukn), kudu))
+    return 2.0*real.(ES.ein"xyzsb,ixyzsb->ixyz"(conj.(ukn), kudu))
 end
 
 function calc_density_τz(nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
     @assert wfc.npol == 2
-    kudu = zeros(ComplexF64, (3, nrmesh..., wfc.nbnd, wfc.npol))
+    kudu = zeros(ComplexF64, (3, nrmesh..., wfc.npol, wfc.nbnd))
     @inbounds for ix in 1:3
-        kudu[ix, :, :, :, :, :] = wfc.xk[ix]*ukn[:, :, :, :, :] .+ ∇ukn[:, :, :, :, ix, :]
+        kudu[ix, :, :, :, :, :] = wfc.xk[ix]*ukn[:, :, :, :, :] .+ ∇ukn[:, :, :, :, :, ix]
     end
     @inbounds for ib in 1:wfc.nbnd
-        ukn[:, :, :, ib, :] .*= occ[ib]
+        ukn[:, :, :, :, ib] .*= occ[ib]
     end
-    tmp = ES.ein"xyzbs,ixyzbt->xyzsti"(conj.(ukn), kudu)
+    tmp = ES.ein"xyzsb,ixyztb->xyzsti"(conj.(ukn), kudu)
     return 2.0*real.(ES.ein"xyzsti,sti->xyz"(tmp, σ))
 end
 
 function calc_density_ps(nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
     @assert wfc.npol == 2
-    kudu = zeros(ComplexF64, (3, nrmesh..., wfc.nbnd, wfc.npol))
+    kudu = zeros(ComplexF64, (3, nrmesh..., wfc.npol, wfc.nbnd))
     for ix in 1:3
-        kudu[ix, :, :, :, :, :] = wfc.xk[ix]*ukn[:, :, :, :, :] .+ ∇ukn[:, :, :, :, ix, :]
+        kudu[ix, :, :, :, :, :] = wfc.xk[ix]*ukn[:, :, :, :, :] .+ ∇ukn[:, :, :, :, :, ix]
     end
     @inbounds for ib in 1:wfc.nbnd
-        ukn[:, :, :, ib, :] .*= occ[ib]
+        ukn[:, :, :, :, ib] .*= occ[ib]
     end
-    tmp = ES.ein"xyzbs,ixyzbt->xyzsti"(conj.(ukn), kudu)
+    tmp = ES.ein"xyzsb,ixyztb->xyzsti"(conj.(ukn), kudu)
     return -2.0*real.(ES.ein"ijk,stj,xyzstk->ixyz"(ϵijk, σ, tmp))
 end
 
@@ -152,9 +152,9 @@ function make_c_k(nrmesh::Tuple, wfc::Wfc; n1::Float64=0.0, n2::Float64=0.0, n3:
     hmin, hmax = extrema(wfc.mill[1,:])
     kmin, kmax = extrema(wfc.mill[2,:])
     lmin, lmax = extrema(wfc.mill[3,:])
-    @assert hmax - hmin < nrmesh[1] || nrmesh[1] == 1 "'nrmesh[1]' must be nrmesh[1] >= fft_grid[1]."
-    @assert kmax - kmin < nrmesh[2] || nrmesh[2] == 1 "'nrmesh[2]' must be nrmesh[2] >= fft_grid[2]."
-    @assert lmax - lmin < nrmesh[3] || nrmesh[3] == 1 "'nrmesh[3]' must be nrmesh[3] >= fft_grid[3]."
+    @assert hmax - hmin < nrmesh[1] || nrmesh[1] == 1 "'nrmesh' must be nrmesh >= FFT grid."
+    @assert kmax - kmin < nrmesh[2] || nrmesh[2] == 1 "'nrmesh' must be nrmesh >= FFT grid."
+    @assert lmax - lmin < nrmesh[3] || nrmesh[3] == 1 "'nrmesh' must be nrmesh >= FFT grid."
     ns1, ns2, ns3 = nrmesh
     i1 = abs(-div(nrmesh[1], 2) - hmin)
     i2 = abs(-div(nrmesh[2], 2) - kmin)
@@ -165,18 +165,17 @@ function make_c_k(nrmesh::Tuple, wfc::Wfc; n1::Float64=0.0, n2::Float64=0.0, n3:
     epn1 = exp(im*2π*n1)
     epn2 = exp(im*2π*n2)
     epn3 = exp(im*2π*n3)
-    cktmp = zeros(ComplexF64, (ns1, ns2, ns3, wfc.nbnd, wfc.npol))
-    ∇cktmp = zeros(ComplexF64, (ns1, ns2, ns3, wfc.nbnd, 3, wfc.npol))
-    @inbounds for is in 1:wfc.npol
-        @inbounds for ipw in 1:wfc.igwx
-            gvec = wfc.mill[1, ipw] * wfc.b1 + wfc.mill[2, ipw] * wfc.b2 + wfc.mill[3, ipw] * wfc.b3
-            ih, ik, il = wfc.mill[:, ipw] .- [hmin, kmin, lmin] .+ 1
-            epn = epn1^(wfc.mill[1, ipw] * (nrmesh[1] == 1)) * epn2^(wfc.mill[2, ipw] * (nrmesh[2] == 1)) * epn3^(wfc.mill[3, ipw] * (nrmesh[3] == 1))
-            evci = wfc.evc[is, :, ipw]
-            cktmp[i1 + ih, i2 + ik, i3 + il, :, is] .= evci * epn
-            @inbounds for ii in 1:3
-                ∇cktmp[i1 + ih, i2 + ik, i3 + il, :, ii, is] .= gvec[ii] * evci * epn
-            end
+    ihs = wfc.mill[1, :] .- hmin .+ 1
+    iks = wfc.mill[2, :] .- kmin .+ 1
+    ils = wfc.mill[3, :] .- lmin .+ 1
+    cktmp = zeros(ComplexF64, (ns1, ns2, ns3, wfc.npol, wfc.nbnd))
+    ∇cktmp = zeros(ComplexF64, (ns1, ns2, ns3, wfc.npol, wfc.nbnd, 3))
+    @inbounds for ipw in 1:wfc.igwx
+        gvec = wfc.mill[1, ipw] * wfc.b1 + wfc.mill[2, ipw] * wfc.b2 + wfc.mill[3, ipw] * wfc.b3
+        epn = epn1^(wfc.mill[1, ipw] * (nrmesh[1] == 1)) * epn2^(wfc.mill[2, ipw] * (nrmesh[2] == 1)) * epn3^(wfc.mill[3, ipw] * (nrmesh[3] == 1))
+        cktmp[i1 + ihs[ipw], i2 + iks[ipw], i3 + ils[ipw], :, :] .= wfc.evc[:, :, ipw] * epn
+        @inbounds for ii in 1:3
+            ∇cktmp[i1 + ihs[ipw], i2 + iks[ipw], i3 + ils[ipw], :, :, ii] .= gvec[ii] * wfc.evc[:, :, ipw] * epn
         end
     end
     return FFTW.ifftshift(cktmp, 1:3), FFTW.ifftshift(∇cktmp, 1:3)
