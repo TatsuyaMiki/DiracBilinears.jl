@@ -22,6 +22,7 @@
   noncolin=.true.
   starting_magnetization=0.0
   nbnd = 58
+  nosym =.true.
 /
 &electrons
    mixing_beta = 0.7
