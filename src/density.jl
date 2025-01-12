@@ -152,40 +152,26 @@ function make_c_k(nrmesh::Tuple, wfc::Wfc; n1::Float64=0.0, n2::Float64=0.0, n3:
     hmin, hmax = extrema(wfc.mill[1,:])
     kmin, kmax = extrema(wfc.mill[2,:])
     lmin, lmax = extrema(wfc.mill[3,:])
+    @assert hmax - hmin < nrmesh[1] || nrmesh[1] == 1 "'nrmesh[1]' must be nrmesh[1] >= fft_grid[1]."
+    @assert kmax - kmin < nrmesh[2] || nrmesh[2] == 1 "'nrmesh[2]' must be nrmesh[2] >= fft_grid[2]."
+    @assert lmax - lmin < nrmesh[3] || nrmesh[3] == 1 "'nrmesh[3]' must be nrmesh[3] >= fft_grid[3]."
     ns1, ns2, ns3 = nrmesh
     i1 = abs(-div(nrmesh[1], 2) - hmin)
     i2 = abs(-div(nrmesh[2], 2) - kmin)
     i3 = abs(-div(nrmesh[3], 2) - lmin)
-    if nrmesh[1] == 1
-        ns1 = hmax - hmin
-        i1 = 0
-    else
-        @assert hmax - hmin < nrmesh[1]
-        ns1 = nrmesh[1]
-    end
-    if nrmesh[2] == 1
-        ns2 = kmax - kmin
-        i2 = 0
-    else
-        @assert kmax - kmin < nrmesh[2]
-        ns2 = nrmesh[2]
-    end
-    if nrmesh[3] == 1
-        ns3 = lmax - lmin
-        i3 = 0
-    else
-        @assert lmax - lmin < nrmesh[3]
-        ns3 = nrmesh[3]
-    end
+    ns1 = (hmax - hmin) * (nrmesh[1] == 1) + nrmesh[1] * (nrmesh[1] != 1)
+    ns2 = (kmax - kmin) * (nrmesh[2] == 1) + nrmesh[2] * (nrmesh[2] != 1)
+    ns3 = (lmax - lmin) * (nrmesh[3] == 1) + nrmesh[3] * (nrmesh[3] != 1)
+    epn1 = exp(im*2π*n1)
+    epn2 = exp(im*2π*n2)
+    epn3 = exp(im*2π*n3)
     cktmp = zeros(ComplexF64, (ns1, ns2, ns3, wfc.nbnd, wfc.npol))
     ∇cktmp = zeros(ComplexF64, (ns1, ns2, ns3, wfc.nbnd, 3, wfc.npol))
-    @inbounds for ipw in 1:wfc.igwx
-        gvec = wfc.mill[1, ipw] * wfc.b1 + wfc.mill[2, ipw] * wfc.b2 + wfc.mill[3, ipw] * wfc.b3
-        ih, ik, il = wfc.mill[:, ipw] .- [hmin, kmin, lmin] .+ 1
-        epn = exp(2π * im * (n1 * wfc.mill[1, ipw] * (nrmesh[1] == 1) +
-                             n2 * wfc.mill[2, ipw] * (nrmesh[2] == 1) +
-                             n3 * wfc.mill[3, ipw] * (nrmesh[3] == 1)))
-        @inbounds for is in 1:wfc.npol
+    @inbounds for is in 1:wfc.npol
+        @inbounds for ipw in 1:wfc.igwx
+            gvec = wfc.mill[1, ipw] * wfc.b1 + wfc.mill[2, ipw] * wfc.b2 + wfc.mill[3, ipw] * wfc.b3
+            ih, ik, il = wfc.mill[:, ipw] .- [hmin, kmin, lmin] .+ 1
+            epn = epn1^(wfc.mill[1, ipw] * (nrmesh[1] == 1)) * epn2^(wfc.mill[2, ipw] * (nrmesh[2] == 1)) * epn3^(wfc.mill[3, ipw] * (nrmesh[3] == 1))
             evci = wfc.evc[is, :, ipw]
             cktmp[i1 + ih, i2 + ik, i3 + il, :, is] .= evci * epn
             @inbounds for ii in 1:3
@@ -193,17 +179,7 @@ function make_c_k(nrmesh::Tuple, wfc::Wfc; n1::Float64=0.0, n2::Float64=0.0, n3:
             end
         end
     end
-    ck = zeros(ComplexF64, (ns1, ns2, ns3, wfc.nbnd, wfc.npol))
-    ∇ck = zeros(ComplexF64, (ns1, ns2, ns3, wfc.nbnd, 3, wfc.npol))
-    @inbounds for is in 1:wfc.npol
-        @inbounds for ib in 1:wfc.nbnd
-            ck[:, :, :, ib, is] = FFTW.ifftshift(cktmp[:, :, :, ib, is])
-            @inbounds for ii in 1:3
-                ∇ck[:, :, :, ib, ii, is] = FFTW.ifftshift(∇cktmp[:, :, :, ib, ii, is])
-            end
-        end
-    end
-    return ck, ∇ck
+    return FFTW.ifftshift(cktmp, 1:3), FFTW.ifftshift(∇cktmp, 1:3)
 end
 
 function write_density(f0::Array{Float64, 3}; qedir::String="manual", savefile::String, atoms::Vector{String}=["none"], atomic_positions::Matrix{Float64}=zeros(3,2), a1::Vector{Float64}=zeros(Float64, 3), a2::Vector{Float64}=zeros(Float64, 3), a3::Vector{Float64}=zeros(Float64, 3))
