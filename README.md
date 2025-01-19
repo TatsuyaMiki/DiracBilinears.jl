@@ -84,7 +84,7 @@ For Wannier matrix elements, you need to perform DFT calculations by [Quantum ES
 ```sh
 QE/bin/pw.x < seedname.scf.in > seedname.scf.out
 ```
-Then, you need to generate the Wannier functions using [Wannier90] and [wan2respack] ([RESPACK]) after the scf and the nscf calculations.
+Then, you need to generate the Wannier functions using [Wannier90] and [wan2respack] ([RESPACK]) after the scf calculation.
 The following command is for these two packages (for more information, see the GitHub page of [wan2respack]):
 ```sh
 python Wan2respack/bin/wan2respack.py -pp conf.toml
