@@ -1,5 +1,10 @@
 module DiracBilinears
 
+export calc_density, write_density
+export calc_wannier_matrix, calc_rgrid, read_hrdat_rgrid, write_wannier_matrix
+export Xml, Wfc, read_wfc, read_xml
+export methfessel_paxton_δ, methfessel_paxton_step, stepc
+
 import EzXML
 import FFTW
 import OMEinsum as ES
