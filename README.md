@@ -51,13 +51,12 @@ The available options are listed in the table below.
 |"∇ρ" (or "nabla_rho")| dradient part of polarization|
 |"ps"|spin-derived electric polarization|  
 
-You can generate the xsf file for [Vesta]/[XCrySDen] plot after the ``calc_density()`` calculation:
+You can generate the xsf file for [XCrySDen] plot after the ``calc_density()`` calculation:
 ```Julia
 write_density(τz; qedir=QEDIR, savefile=FILENAME)
 ```
 The file extension of FILENAME must be set to ".xsf".
 
-[Vesta]: https://jp-minerals.org/vesta/en/
 [XCrySDen]: http://www.xcrysden.org/
 
 
