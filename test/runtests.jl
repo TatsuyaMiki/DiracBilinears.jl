@@ -38,6 +38,15 @@ end
     @test isapprox(xml.a3, a3ref, atol=1e-12)
 end
 
+@testset "nrmesh" begin
+    xml = DB.read_xml("./tmp/data-file-schema.xml")
+    nrmesh = DB.make_nrmesh(xml=xml, nrmesh=(0,0,0))
+    @test nrmesh == (24,24,30)
+    nrmesh = DB.make_nrmesh(xml=xml, nrmesh=(32,32,32))
+    @test nrmesh == (32,32,32)
+end
+
+
 @testset "Make ck" begin
     mill = zeros(Int, (3, 2))
     evc = ones(ComplexF64, (2, 2, 2))

@@ -1,7 +1,7 @@
 
 function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64=0.0, n3::Float64=0.0, nrmesh::Tuple=(0,0,0), δμ::Float64=0.0)
     xml = read_xml(qedir*"/data-file-schema.xml")
-    nrmesh_ = make_nrmesh(xml, nrmesh)
+    nrmesh_ = make_nrmesh(xml=xml, nrmesh=nrmesh)
     o = make_zeros_density(calc, nrmesh_)
     volume = xml.nxk*abs(LA.dot(xml.a3, LA.cross(xml.a1, xml.a2)))
     for ik in 1:xml.nxk
@@ -20,12 +20,12 @@ function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64
     return o
 end
 
-function make_nrmesh(xml::Xml, nrmesh::Tuple=(0,0,0))
-    nrmesh_ = copy(nrmesh)
+function make_nrmesh(;xml::Xml, nrmesh::Tuple=(0,0,0))
     if nrmesh == (0,0,0)
-        nrmesh_ = (div(xml.fftgrid[1], 2), div(xml.fftgrid[2], 2), div(xml.fftgrid[3], 2))
+        return (div(xml.fftgrid[1], 2), div(xml.fftgrid[2], 2), div(xml.fftgrid[3], 2))
+    else
+        return nrmesh
     end
-    return nrmesh_
 end
 
 
