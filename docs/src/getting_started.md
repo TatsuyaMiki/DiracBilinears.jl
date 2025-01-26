@@ -1,4 +1,5 @@
 
+
 # Installation
 
 DiracBilinears.jl can be installed with the Julia package manager:
@@ -64,7 +65,7 @@ You can do this by running:
 ```sh
 QE/bin/pw.x < seedname.scf.in > seedname.scf.out
 ```
-After completing the scf calculation, you can generate the Wannier functions using [Wannier90] and [wan2respack] ([RESPACK])　(for more information, see the GitHub page of [wan2respack]). 
+After completing the scf calculation, you can generate the Wannier functions using [Wannier90] and [wan2respack] 　(for more information, see the GitHub page of [wan2respack]). 
 First, run:
 ```sh
 python Wan2respack/bin/wan2respack.py -pp conf.toml
@@ -80,8 +81,8 @@ Wanier90/wannier90.x seedname
 python Wan2respack/bin/wan2respack.py conf.toml
 ```
 [Quantum ESPRESSO]: https://www.quantum-espresso.org
-[wan2respack]: https://github.com/respack-dev/wan2respack/tree/main
 [Wannier90]: https://wannier.org
+[wan2respack]: https://github.com/respack-dev/wan2respack
 [RESPACK]: https://sites.google.com/view/kazuma7k6r
 
 
