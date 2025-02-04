@@ -1,0 +1,39 @@
+&control
+   calculation = 'scf'
+   prefix = 'Te'
+   pseudo_dir = './PP/'
+   outdir='./tmp'
+   wf_collect=.true.
+   tstress = .true.
+   tprnfor = .true.
+   disk_io = 'low'
+/
+&system
+   ibrav = 4
+   celldm(1) = 8.6927395475
+   celldm(3) = 1.2826086956909368
+   nat = 3
+   ntyp = 1
+   occupations = 'smearing'
+   smearing = 'm-p'
+   degauss = 0.01
+   ecutwfc = 70.0,
+   ecutrho = 280.0,
+   lspinorb=.true.
+   noncolin=.true.
+   starting_magnetization=0.0
+/
+&electrons
+   mixing_beta = 0.7
+   conv_thr = 1.0d-10
+/
+ATOMIC_SPECIES
+ Te 127.6000000  Te.upf
+
+ATOMIC_POSITIONS crystal
+Te   0.736700000  0.000000000  0.666666667
+Te   0.263300000  0.263300000  0.000000000
+Te   0.000000000  0.736700000  0.333333337
+
+K_POINTS automatic
+6 6 6 0 0 0
