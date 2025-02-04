@@ -22,7 +22,7 @@ end
 
 function make_nrmesh(;xml::Xml, nrmesh::Tuple=(0,0,0))
     if nrmesh == (0,0,0)
-        return (div(xml.fftgrid[1], 2), div(xml.fftgrid[2], 2), div(xml.fftgrid[3], 2))
+        return (xml.fftgrid[1], xml.fftgrid[2], xml.fftgrid[3])
     else
         return nrmesh
     end
@@ -169,11 +169,11 @@ function make_c_k(nrmesh::Tuple, wfc::Wfc; n1::Float64=0.0, n2::Float64=0.0, n3:
     ils = wfc.mill[3, :] .- lmin .+ 1
     cktmp = zeros(ComplexF64, (ns1, ns2, ns3, wfc.npol, wfc.nbnd))
     ∇cktmp = zeros(ComplexF64, (ns1, ns2, ns3, wfc.npol, wfc.nbnd, 3))
-    @inbounds for ipw in 1:wfc.igwx
+    for ipw in 1:wfc.igwx
         gvec = wfc.mill[1, ipw] * wfc.b1 + wfc.mill[2, ipw] * wfc.b2 + wfc.mill[3, ipw] * wfc.b3
         epn = epn1^(wfc.mill[1, ipw] * (nrmesh[1] == 1)) * epn2^(wfc.mill[2, ipw] * (nrmesh[2] == 1)) * epn3^(wfc.mill[3, ipw] * (nrmesh[3] == 1))
         cktmp[i1 + ihs[ipw], i2 + iks[ipw], i3 + ils[ipw], :, :] .= wfc.evc[:, :, ipw] * epn
-        @inbounds for ii in 1:3
+        for ii in 1:3
             ∇cktmp[i1 + ihs[ipw], i2 + iks[ipw], i3 + ils[ipw], :, :, ii] .= gvec[ii] * wfc.evc[:, :, ipw] * epn
         end
     end
