@@ -41,7 +41,7 @@ end
 @testset "nrmesh" begin
     xml = read_xml("./tmp/data-file-schema.xml")
     nrmesh = DiracBilinears.make_nrmesh(xml=xml, nrmesh=(0,0,0))
-    @test nrmesh == (24,24,30)
+    @test nrmesh == (48,48,60)
     nrmesh = DiracBilinears.make_nrmesh(xml=xml, nrmesh=(32,32,32))
     @test nrmesh == (32,32,32)
 end
