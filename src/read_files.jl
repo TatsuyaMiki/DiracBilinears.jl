@@ -24,6 +24,8 @@ struct Xml
     a2::Vector{Float64}
     a3::Vector{Float64}
     fftgrid::Vector{Int}
+    atoms::Vector{String}
+    atomicpos::Matrix{Float64}
 end
 
 function read_wfc(filename::String)
@@ -80,6 +82,16 @@ function read_xml(filename::String)
     a2 = parse.(Float64, split(EzXML.nodecontent(findfirst("//a2/text()", primates))))
     a3 = parse.(Float64, split(EzXML.nodecontent(findfirst("//a3/text()", primates))))
 
+    astruct = findfirst("//atomic_structure", primates)
+    apos = findfirst("atomic_positions", astruct)
+    atom = findall("atom", apos)
+    atoms = [att["name"] for att in atom]
+    natom = parse(Int, astruct["nat"])
+    atomicpos = zeros(3, natom)
+    for ia in 1:natom
+        atomicpos[:, ia] = parse.(Float64, split(EzXML.nodecontent(atom[ia]), r"\s+"))
+    end
+
     fft = findfirst("//fft_grid", primates)
     fftgrid = parse.(Int, [fft["nr1"], fft["nr2"], fft["nr3"]])
     species = EzXML.nodecontent.(findall("//eigenvalues/text()", primates))
@@ -88,6 +100,5 @@ function read_xml(filename::String)
         e[1:end, ik] = parse.(Float64, split(species[ik]))
     end
     ef = parse(Float64, EzXML.nodecontent(findfirst("//fermi_energy/text()", primates)))
-    return Xml(e, ef, nbnd, nxk, a1, a2, a3, fftgrid)
+    return Xml(e, ef, nbnd, nxk, a1, a2, a3, fftgrid, atoms, atomicpos)
 end
-

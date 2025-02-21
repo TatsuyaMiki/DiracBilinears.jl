@@ -180,7 +180,7 @@ function make_c_k(nrmesh::Tuple, wfc::Wfc; n1::Float64=0.0, n2::Float64=0.0, n3:
     return FFTW.ifftshift(cktmp, 1:3), FFTW.ifftshift(∇cktmp, 1:3)
 end
 
-function write_density(f0::Array{Float64, 3}; qedir::String="manual", savefile::String, atoms::Vector{String}=["none"], atomic_positions::Matrix{Float64}=zeros(3,2), a1::Vector{Float64}=zeros(Float64, 3), a2::Vector{Float64}=zeros(Float64, 3), a3::Vector{Float64}=zeros(Float64, 3))
+function write_density(f0::Array{Float64, 3}; qedir::String="manual", savefile::String, atoms::Vector{String}=["none"], atomicpos::Matrix{Float64}=zeros(3,2), a1::Vector{Float64}=zeros(Float64, 3), a2::Vector{Float64}=zeros(Float64, 3), a3::Vector{Float64}=zeros(Float64, 3))
     bohr2ang = 0.5291772083
     a1ang = zeros(Float64, 3)
     a2ang = zeros(Float64, 3)
@@ -195,6 +195,8 @@ function write_density(f0::Array{Float64, 3}; qedir::String="manual", savefile::
         a1ang = xml.a1.*bohr2ang
         a2ang = xml.a2.*bohr2ang
         a3ang = xml.a3.*bohr2ang
+        atoms = xml.atoms
+        atomicpos = xml.atomicpos .* bohr2ang
     end
     na1, na2, na3 = size(f0)
     fplot = zeros(Float64, (na1+1, na2+1, na3+1))
@@ -222,8 +224,7 @@ function write_density(f0::Array{Float64, 3}; qedir::String="manual", savefile::
         PF.@printf(io, "%2s\n", "PRIMCOORD")
         PF.@printf(io, "%15f%10f\n", natom, length(unique(atoms)))
         for ia in 1:natom
-            ra = atomic_positions[1, ia]*a1ang + atomic_positions[2, ia]*a2ang + atomic_positions[3, ia]*a3ang
-            PF.@printf(io, "%2s%10f%10f%10f\n", atoms[ia], ra[1], ra[2], ra[3])
+            PF.@printf(io, "%2s%10f%10f%10f\n", atoms[ia], atomicpos[1, ia], atomicpos[2, ia], atomicpos[3, ia])
         end
     end
     PF.@printf(io, "%2s\n", "")
