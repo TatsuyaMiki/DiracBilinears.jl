@@ -1,5 +1,8 @@
 
 function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64=0.0, n3::Float64=0.0, nrmesh::Tuple=(0,0,0), δμ::Float64=0.0)
+    ## - n1, n2, n3 are parameters which can be used for calculations in a 2D plane.
+    ##   The calculations are performed on a plane perpendicular to ai (i=1,2,3) that passes through ni*ai.
+    ## - The chemical potential can be shifted using δμ.
     xml = read_xml(qedir*"/data-file-schema.xml")
     nrmesh_ = make_nrmesh(xml=xml, nrmesh=nrmesh)
     o = make_zeros_density(calc, nrmesh_)
