@@ -155,9 +155,9 @@ function make_c_k(nrmesh::Tuple, wfc::Wfc; n1::Float64=0.0, n2::Float64=0.0, n3:
     hmin, hmax = extrema(wfc.mill[1,:])
     kmin, kmax = extrema(wfc.mill[2,:])
     lmin, lmax = extrema(wfc.mill[3,:])
-    @assert hmax - hmin <= nrmesh[1] || nrmesh[1] == 1 "'nrmesh' must be nrmesh >= FFT grid."
-    @assert kmax - kmin <= nrmesh[2] || nrmesh[2] == 1 "'nrmesh' must be nrmesh >= FFT grid."
-    @assert lmax - lmin <= nrmesh[3] || nrmesh[3] == 1 "'nrmesh' must be nrmesh >= FFT grid."
+    @assert hmax - hmin + 1 <= nrmesh[1] || nrmesh[1] == 1 "'nrmesh' are too small."
+    @assert kmax - kmin + 1 <= nrmesh[2] || nrmesh[2] == 1 "'nrmesh' are too small."
+    @assert lmax - lmin + 1 <= nrmesh[3] || nrmesh[3] == 1 "'nrmesh' are too small."
     i1 = abs(-div(nrmesh[1], 2) - hmin)
     i2 = abs(-div(nrmesh[2], 2) - kmin)
     i3 = abs(-div(nrmesh[3], 2) - lmin)
