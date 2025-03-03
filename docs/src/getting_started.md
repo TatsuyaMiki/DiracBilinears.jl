@@ -12,15 +12,15 @@ julia -e 'import Pkg; Pkg.add("DiracBilinears")'
 ### Spatial distribution
 
 The following files are required:
-- seedname.scf.in
-- seedname.nscf.in
+- seedname.scf.in (The input file for scf calculation.)
+- seedname.nscf.in (The input file for nscf calculation.)
 
-Before evaluation of the bilinears, you need to perform DFT calculations by [Quantum ESPRESSO] to obtain the Bloch functions.
+Before evaluation of the bilinears, you need to perform DFT calculations by [Quantum ESPRESSO](https://www.quantum-espresso.org) to obtain the Bloch functions.
 ```sh
 QE/bin/pw.x < seedname.scf.in > seedname.scf.out
 QE/bin/pw.x < seedname.nscf.in > seedname.nscf.out
 ```
-[Quantum ESPRESSO]: https://www.quantum-espresso.org
+
 
 
 To compute the spatial distribution of electron chirality, use the following commands:
@@ -28,50 +28,49 @@ To compute the spatial distribution of electron chirality, use the following com
 using DiracBilinears
 τz = calc_density(calc="τz", qedir="$outdir/seedname.save")
 ```
-Here, ``qedir`` should be set to the output directory from the Quantum ESPRESSO calculation, which contains the Bloch wave functions.
-The variable ``$outdir`` corresponds to the directory specified in the nscf input file.
-You can select the physical quantity to calculate by specifying the ``calc`` option. 
+Here, `qedir` should be set to the output directory from the Quantum ESPRESSO calculation, which contains the Bloch wave functions.
+The variable `$outdir` corresponds to the directory specified in the nscf input file.
+You can select the physical quantity to calculate by specifying the `calc` option. 
 The available options are listed in the table below.
-|``calc`` | Physical quantities |
-|:---:|:---:|
-|"ρ" (or "rho")|| electron density |
-|"ms"| magnetization |
-|"j"| current |
-|"∇ms" (or "nabla_ms")|pseudoscalar|
-|"τz" (or "tau_z")|electron chirality|
-|"∇ρ" (or "nabla_rho")| dradient part of polarization|
-|"ps"|spin-derived electric polarization|  
 
-You can generate the xsf file for [XCrySDen] plot after the ``calc_density()`` calculation:
+`calc`                   | Physical quantities 
+:------------------------|:----------------------------------
+`"ρ"` (or `"rho"`)       | electron density 
+`"ms"`                   | magnetization 
+`"j"`                    | current 
+`"∇ms"` (or `"nabla_ms"`)|pseudoscalar
+`"τz"` (or `"tau_z"`)    |electron chirality
+`"∇ρ"` (or `"nabla_rho"`)| dradient part of polarization
+`"ps"`                   |spin-derived electric polarization
+
+You can generate the xsf file for [XCrySDen](http://www.xcrysden.org/) plot after the `calc_density()` calculation:
 ```Julia
 write_density(τz; qedir=QEDIR, savefile=FILENAME)
 ```
 The file extension of FILENAME must be set to ".xsf".
-
-[XCrySDen]: http://www.xcrysden.org/
 
 
 
 ### Wannier matrix element
 
 The following files are required:
-- seedname.scf.in
-- seedname.pw2wan.in
-- seedname.win.ref
-- conf.toml
+- seedname.scf.in (The input file for scf calculation.)
+- seedname.pw2wan.in (The input file for pw2wannier90.x.)
+- seedname.win.ref (The reference file for generating the input file of Wannier90.)
+- conf.toml (The configuration file for wan2respack.)
 
-For the Wannier matrix elements, you first need to perform DFT calculations using [Quantum ESPRESSO] to obtain the Bloch functions. 
+For the Wannier matrix elements, you first need to perform DFT calculations using [Quantum ESPRESSO](https://www.quantum-espresso.org) to obtain the Bloch functions. 
 You can do this by running:
 ```sh
 QE/bin/pw.x < seedname.scf.in > seedname.scf.out
 ```
-After completing the scf calculation, you can generate the Wannier functions using [Wannier90] and [wan2respack] 　(for more information, see the GitHub page of [wan2respack]). 
+After completing the scf calculation, you can generate the Wannier functions using [Wannier90](https://wannier.org) and [wan2respack](https://github.com/respack-dev/wan2respack) (for more information, see the GitHub page of [wan2respack](https://github.com/respack-dev/wan2respack)).
 First, run:
 ```sh
 python Wan2respack/bin/wan2respack.py -pp conf.toml
 ```
-This command will generate an input file ``seedname.nscf_wannier.in``. 
-In this file, please replace ``calc="scf"`` with ``calc="nscf"``.
+This command will generate an input file `seedname.nscf_wannier.in`. 
+In this file, please replace `calc="scf"` with `calc="nscf"`.
 Next, calculate the Wannier functions by running:
 ```
 QE/bin/pw.x < seedname.nscf_wannier.in > seedname.nscf_wannier.out
@@ -80,29 +79,28 @@ QE/bin/pw2wannier90.x < seedname.pw2wan.in > seedname.pw2wan.out
 Wanier90/wannier90.x seedname
 python Wan2respack/bin/wan2respack.py conf.toml
 ```
-[Quantum ESPRESSO]: https://www.quantum-espresso.org
-[Wannier90]: https://wannier.org
-[wan2respack]: https://github.com/respack-dev/wan2respack
-[RESPACK]: https://sites.google.com/view/kazuma7k6r
 
 
-To compute the matrix elements, you need to specify the paths of two directories, "dir-wfn-full" (referred to as ``WFNDIR``) and "dir-wan" (referred to as ``WANDIR``). 
-These directories are generated by the [wan2respack] calculation. 
+
+
+To compute the matrix elements, you need to specify the paths of two directories, "dir-wfn-full" (referred to as `WFNDIR`) and "dir-wan" (referred to as `WANDIR`). 
+These directories are generated by the [wan2respack](https://github.com/respack-dev/wan2respack) calculation. 
 To calculate the matrix elements of electron chirality, use the following commands:
 ```Julia
 using DiracBilinears
-rs, degen = calc_rgrid(mpmesh=(6,6,6))
-τz, rs = calc_wannier_matrix(calc="τz", rgrid=rs, wfndir=WFNDIR, wandir=WANDIR)
+rs, degen = calc_rgrid(rfile=FILENAME)
+τz = calc_wannier_matrix(calc="τz", rgrid=rs, wfndir=WFNDIR, wandir=WANDIR)
 ```
-Please set the Monkhorst-Pack mesh size for the scf calculation in ``mpmesh``. 
-You can choose the ``calc`` option from the table shown below.
-|``calc`` | Physical quantities |
-|:---:|:---:|
-|"ρ" (or "rho")| electron density |
-|"ms"| magnetization |
-|"j"| current |
-|"τz" (or "tau_z", "chirality")|electron chirality|
-|"ps"|spin-derived electric polarization| 
+Please set `rfile` to the input file of Wannier90 or the input file of scf calculation. 
+You can choose the type of `calc` from the table shown below.
+
+`calc`                              | Physical quantities 
+:-----------------------------------|:----------------------------------
+`"ρ"` (or `"rho"`)                  | electron density 
+`"ms"`                              | magnetization 
+`"j"`                               | current 
+`"τz"` (or `"tau_z"`, `"chirality"`)|electron chirality
+`"ps"`                              |spin-derived electric polarization
 
 The Wannier matrix elements can be saved to a text file using the following command:
 ```Julia
