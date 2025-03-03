@@ -101,7 +101,7 @@ To calculate the matrix elements of electron chirality, use the following comman
 ```Julia
 using DiracBilinears
 rs, degen = calc_rgrid(rfile=FILENAME)
-$\tau$z = calc_wannier_matrix(calc="$\color{Maroon}{\tau}$z", rgrid=rs, wfndir=WFNDIR, wandir=WANDIR)
+τz = calc_wannier_matrix(calc="τz", rgrid=rs, wfndir=WFNDIR, wandir=WANDIR)
 ```
 Please set ``rfile`` to the input file of Wannier90 or the input file of scf calculation. 
 You can choose the type of ``calc`` from the table shown below.
