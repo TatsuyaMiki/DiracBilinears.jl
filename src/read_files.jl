@@ -73,6 +73,24 @@ function read_wfc(filename::String)
     return Wfc(ik, xk, ispin, Γonly, scalef, ngw, igwx, npol, nbnd, b1, b2, b3, mill, evc)
 end
 
+function read_wan_grid(rfile::String)
+    nx, ny, nz = 0, 0, 0
+    flagscf = false
+    for line in eachline(rfile)
+        if occursin("mp_grid", line) == true 
+            nx, ny, nz = parse.(Int, split(line)[3:5])
+        end
+        if flagscf == true
+            nx, ny, nz = parse.(Int, split(line)[1:3])
+        end
+        if occursin("K_POINTS", line) == true && occursin("automatic", line) == true 
+            flagscf = true
+        end
+    end
+    @assert nx != 0 && ny != 0 && nz != 0 "Failed to read k-points."
+    return (nx, ny, nz)
+end
+
 function read_xml(filename::String)
     doc = EzXML.readxml(filename)
     primates = EzXML.root(doc)

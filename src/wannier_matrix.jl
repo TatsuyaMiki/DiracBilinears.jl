@@ -29,7 +29,11 @@ function calc_wannier_matrix(;calc::String, wfndir::String, wandir::String, rgri
     return o
 end
 
-function calc_rgrid(;mpmesh::Tuple)
+function calc_rgrid(;mpmesh::Tuple=(0,0,0), rfile::String="none")
+    @assert rfile != "none" || mpmesh != (0, 0, 0) "No argument specified."
+    if mpmesh == (0, 0, 0)
+        mpmesh = read_wan_grid(rfile)
+    end
     rgrid = zeros(Int, (3, mpmesh[1]*mpmesh[2]*mpmesh[3]))
     ir = 0
     for ir1 in 1:mpmesh[1]
@@ -49,8 +53,8 @@ function calc_rgrid(;mpmesh::Tuple)
     return rgrid, degen
 end
 
-function read_hrdat_rgrid(filename::String)
-    open(filename, "r") do io
+function read_hrdat_rgrid(hrfile::String)
+    open(hrfile, "r") do io
         str = readline(io) # comment
         norb = parse(Int, readline(io)) # norb
         nr = parse(Int, readline(io)) # nr
