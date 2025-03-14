@@ -91,7 +91,7 @@ function calc_density_∇ms(wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
     @inbounds for ib in 1:wfc.nbnd
         ukn[:, :, :, :, ib] .*= occ[ib]
     end
-    return 2.0*imag.(ES.ein"xyzsbi,sti,xyztb->xyz"(conj.(∇ukn), σ, ukn))
+    return -2.0*imag.(ES.ein"xyzsbi,sti,xyztb->xyz"(conj.(∇ukn), σ, ukn))
 end
 
 function calc_density_j(nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
