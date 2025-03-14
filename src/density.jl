@@ -77,7 +77,7 @@ function calc_density_ρ(ukn, occ::Vector{Float64})
 end
 
 function calc_density_ms(ukn, occ::Vector{Float64})
-    return ES.ein"xyzsb,sti,xyztb,b->ixyz"(conj.(ukn), σ, ukn, occ)
+    return -ES.ein"xyzsb,sti,xyztb,b->ixyz"(conj.(ukn), σ, ukn, occ)
 end
 
 function calc_density_∇ρ(wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
