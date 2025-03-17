@@ -29,10 +29,10 @@ By connecting to the external first-principles calculation package Quantum ESPRE
 ```
 
 The src directory includes the following files:
-- DiracBilinear.jl (The main file.)
-- density.jl (The codes for spatial distribution.)
-- wannier_matrix.jl (The codes for Wannier matrix elements.)
-- for_wan2respack.jl, read_files.jl (The codes for connecting to Quantum ESPRESSO and wan2respack.)
+- DiracBilinear.jl (The main code.)
+- density.jl (The code for spatial distribution.)
+- wannier_matrix.jl (The code for Wannier matrix elements.)
+- for_wan2respack.jl, read_files.jl (The code for connecting to Quantum ESPRESSO and wan2respack.)
 - module.jl (Additional modules)
 
 ## Requirements
