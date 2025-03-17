@@ -9,6 +9,39 @@ By connecting to the external first-principles calculation package Quantum ESPRE
 - spatial distributions of the bilinears
 - Wannier matrix elements of the bilinears
 
+## Folder structure
+
+```
+  |--LICENSE         
+  |--README.md       
+  |
+  |--docs
+  |
+  |--examples
+  |    |
+  |    |--README.md
+  |    |--BaTiO3
+  |    |--Te
+  |
+  |--src
+  |
+  |--test
+```
+
+The src directory includes the following files:
+- DiracBilinear.jl (The main file.)
+- density.jl (The codes for spatial distribution.)
+- wannier_matrix.jl (The codes for Wannier matrix elements.)
+- for_wan2respack.jl, read_files.jl (The codes for connecting to Quantum ESPRESSO and wan2respack.)
+- module.jl (Additional modules)
+
+## Requirements
+You will need the following packages.
+
+- [Quantum ESPRESSO](https://www.quantum-espresso.org)
+- [Wannier90](http://www.wannier.org)
+- [wan2respack](https://github.com/respack-dev/wan2respack/tree/spinor) ("spinor" branch on GitHub)
+
 ## Installation
 
 DiracBilinears.jl can be installed with the Julia package manager:
