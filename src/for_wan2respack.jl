@@ -291,7 +291,7 @@ end
 
 
 
-function read_lattice(filename)
+function read_lattice(filename::String)
     io = open(filename, "r");
     a1 = parse.(Float64, split(readline(io)))
     a2 = parse.(Float64, split(readline(io)))
@@ -302,7 +302,7 @@ end
 
 function read_wan(io, nwfc::Int, npol::Int, ng::Int)
     cs = zeros(ComplexF64, (ng, npol, nwfc))
-    skip(io, 8)
+    seek(io, 8)
     for is in 1:npol
         for ib in 1:nwfc
             for ig in 1:ng
