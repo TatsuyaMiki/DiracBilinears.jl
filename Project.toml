@@ -1,7 +1,7 @@
 name = "DiracBilinears"
 uuid = "ae7ec7fe-6a6e-422b-b650-b7e6d59ce0d8"
 authors = ["Tatsuya Miki <tatsuya.miki.1201@gmail.com> and contributors"]
-version = "0.1.7"
+version = "0.1.8"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
