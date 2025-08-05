@@ -77,7 +77,7 @@ function calc_density_ρ(ukn, occ::Vector{Float64})
 end
 
 function calc_density_ms(ukn, occ::Vector{Float64})
-    return -ES.ein"xyzsb,sti,xyztb,b->ixyz"(conj.(ukn), σ, ukn, occ)
+    return -ES.optein"xyzsb,sti,xyztb,b->ixyz"(conj.(ukn), σ, ukn, occ)
 end
 
 function calc_density_∇ρ(wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
@@ -91,7 +91,7 @@ function calc_density_∇ms(wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
     @inbounds for ib in 1:wfc.nbnd
         ukn[:, :, :, :, ib] .*= occ[ib]
     end
-    return -2.0*imag.(ES.ein"xyzsbi,sti,xyztb->xyz"(conj.(∇ukn), σ, ukn))
+    return -2.0*imag.(ES.optein"xyzsbi,sti,xyztb->xyz"(conj.(∇ukn), σ, ukn))
 end
 
 function calc_density_j(nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
@@ -129,7 +129,7 @@ function calc_density_ps(nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float
         ukn[:, :, :, :, ib] .*= occ[ib]
     end
     tmp = ES.ein"xyzsb,ixyztb->xyzsti"(conj.(ukn), kudu)
-    return -2.0*real.(ES.ein"ijk,stj,xyzstk->ixyz"(ϵijk, σ, tmp))
+    return -2.0*real.(ES.optein"ijk,stj,xyzstk->ixyz"(ϵijk, σ, tmp))
 end
 
 function calc_fourier_k(nrmesh::Tuple, ck)

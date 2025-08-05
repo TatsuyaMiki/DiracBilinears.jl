@@ -133,7 +133,7 @@ function calc_wan_ms(cs::Array{ComplexF64, 3}, igwx::Int, nwfc::Int, nxk::Int)
     mk = zeros(ComplexF64, (3, nwfc, nwfc))
     for ipw in 1:igwx
         cuk = cs[ipw, :, :]
-        mk += ES.ein"sm,tn,sti->imn"(conj.(cuk), cuk, σ) ./ nxk
+        mk += ES.optein"sm,tn,sti->imn"(conj.(cuk), cuk, σ) ./ nxk
     end
     return mk
 end
@@ -143,7 +143,7 @@ function calc_wan_j(cs::Array{ComplexF64, 3}, k::Vector{Float64}, mill::Matrix{I
     for ipw in 1:igwx
         kgvec = (k[1] + mill[1,ipw])*b1 .+ (k[2] + mill[2,ipw])*b2 .+ (k[3] + mill[3,ipw])*b3
         cuk = cs[ipw, :, :]
-        psk += 2.0 .* ES.ein"i,sm,sn->imn"(kgvec, conj.(cuk), cuk) ./ nxk
+        psk += 2.0 .* ES.optein"i,sm,sn->imn"(kgvec, conj.(cuk), cuk) ./ nxk
     end
     return psk
 end
@@ -153,7 +153,7 @@ function calc_wan_τz(cs::Array{ComplexF64, 3}, k::Vector{Float64}, mill::Matrix
     for ipw in 1:igwx
         kgvec = (k[1] + mill[1,ipw])*b1 .+ (k[2] + mill[2,ipw])*b2 .+ (k[3] + mill[3,ipw])*b3
         cuk = cs[ipw, :, :]
-        τzk += 2.0 .* ES.ein"i,sti,sm,tn->mn"(kgvec, σ, conj.(cuk), cuk) ./ nxk
+        τzk += 2.0 .* ES.optein"i,sti,sm,tn->mn"(kgvec, σ, conj.(cuk), cuk) ./ nxk
     end
     return τzk
 end
@@ -163,7 +163,7 @@ function calc_wan_ps(cs::Array{ComplexF64, 3}, k::Vector{Float64}, mill::Matrix{
     for ipw in 1:igwx
         kgvec = (k[1] + mill[1,ipw])*b1 .+ (k[2] + mill[2,ipw])*b2 .+ (k[3] + mill[3,ipw])*b3
         cuk = cs[ipw, :, :]
-        psk += -2.0 .* ES.ein"ijk,j,stk,sm,tn->imn"(ϵijk, kgvec, σ, conj.(cuk), cuk) ./ nxk
+        psk += -2.0 .* ES.optein"ijk,j,stk,sm,tn->imn"(ϵijk, kgvec, σ, conj.(cuk), cuk) ./ nxk
     end
     return psk
 end
