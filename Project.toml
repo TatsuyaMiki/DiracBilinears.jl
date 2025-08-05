@@ -15,16 +15,16 @@ Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
 [compat]
-Dates = "1.6, 1.11.0"
+Dates = "1.6, 1.10"
 DocumenterTools = "0.1.20"
 EzXML = "1.2.0"
 FFTW = "1.8.0"
-LinearAlgebra = "1.6, 1.11.0"
+LinearAlgebra = "1.6, 1.10"
 OMEinsum = "0.9"
-Printf = "1.6, 1.11.0"
+Printf = "1.6, 1.10"
 Revise = "3.6.4"
 SpecialFunctions = "2.5.0"
-julia = "1.6, 1"
+julia = "1.6, 1.10, 1"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
