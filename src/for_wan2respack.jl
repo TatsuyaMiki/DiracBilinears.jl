@@ -302,7 +302,7 @@ end
 
 function read_wan(io, nwfc::Int, npol::Int, ng::Int)
     cs = zeros(ComplexF64, (ng, npol, nwfc))
-    seek(io, 8)
+    skip(io, 8)
     for is in 1:npol
         for ib in 1:nwfc
             for ig in 1:ng
