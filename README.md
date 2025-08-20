@@ -152,7 +152,7 @@ write_wannier_matrix(τz, rs, degen; savefile=FILENAME)
 ```
 
 
-## License and Citation
+## License and citation
 
 This package is released under the GNU General Public License version 3 (GPL v3). See ``LICENSE`` for details.
 
