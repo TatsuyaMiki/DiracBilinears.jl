@@ -15,7 +15,7 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "Getting Started" => "getting_started.md",
-        "Lisense and Citation" => "lisense_citation.md"
+        "License and Citation" => "license_citation.md"
     ],
 )
 

@@ -79,9 +79,9 @@ The available options are listed in the table below.
 |"ρ" (or "rho")|| electron density |
 |"ms"| magnetization |
 |"j"| current |
-|"∇ms" (or "nabla_ms")|pseudoscalar|
-|"τz" (or "tau_z")|electron chirality|
-|"∇ρ" (or "nabla_rho")| dradient part of polarization|
+|"∇ms" (or "nabla_ms")| pseudoscalar|
+|"τz" (or "tau_z")| electron chirality|
+|"∇ρ" (or "nabla_rho")| gradient part of polarization|
 |"ps"|spin-derived electric polarization|  
 
 You can generate the xsf file for [XCrySDen] plot after the ``calc_density()`` calculation:
@@ -143,8 +143,8 @@ You can choose the type of ``calc`` from the table shown below.
 |"ρ" (or "rho")| electron density |
 |"ms"| magnetization |
 |"j"| current |
-|"τz" (or "tau_z", "chirality")|electron chirality|
-|"ps"|spin-derived electric polarization| 
+|"τz" (or "tau_z", "chirality")| electron chirality|
+|"ps"| spin-derived electric polarization| 
 
 The Wannier matrix elements can be saved to a text file using the following command:
 ```Julia
@@ -153,6 +153,8 @@ write_wannier_matrix(τz, rs, degen; savefile=FILENAME)
 
 
 ## Citation
+
+This package is released under the GNU General Public License version 3 (GPL v3).
 
 If you find this package useful in your research, please consider citing the following papers:
 - T. Miki, H. Ikeda, M.-T. Suzuki, and S. Hohisno, [Phys. Rev. Lett. **134**, 226401 (2025)](https://doi.org/10.1103/PhysRevLett.134.226401).
