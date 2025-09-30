@@ -76,7 +76,7 @@ You can select the physical quantity to calculate by specifying the ``calc`` opt
 The available options are listed in the table below.
 |``calc`` | Physical quantities |
 |:---:|:---:|
-|"ρ" (or "rho")|| electron density |
+|"ρ" (or "rho")| electron density |
 |"ms"| magnetization |
 |"j"| current |
 |"∇ms" (or "nabla_ms")| pseudoscalar|
