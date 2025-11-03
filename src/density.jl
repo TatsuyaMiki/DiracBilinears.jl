@@ -12,7 +12,7 @@ function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64
         wfcfile = qedir*"/wfc$(ik).dat"
         wfc = read_wfc(wfcfile)
 
-        occ = calc_occupation(xml, ik, smearing, degauss, δμ, emin)
+        occ = calc_occupation(xml.e[:, ik], ef=xml.ef, smearing=smearing, degauss=degauss, δμ=δμ, emin=emin)
         ck, ∇ck = make_c_k(nrmesh_, wfc; n1=n1, n2=n2, n3=n3)
         ukn = calc_fourier_k(nrmesh_, ck)/√(volume)
         ∇ukn = calc_fourier_k(nrmesh_, ∇ck)/√(volume)
@@ -22,17 +22,17 @@ function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64
     return o
 end
 
-function calc_occupation(xml::Xml, ik::Int, smearing::String, degauss::Float64, δμ::Float64, emin::Float64)
+function calc_occupation(e::Vector{Float64}; ef::Float64, smearing::String="step", degauss::Float64=1.0, δμ::Float64=0.0, emin::Float64=0.0)
     if (smearing == "m-p") || (smearing == "mp")
-        occ = methfessel_paxton_step.((xml.e[:, ik] .- xml.ef) ./ degauss; n=1)
+        occ = methfessel_paxton_step.((e .- ef) ./ degauss; n=1)
     elseif smearing == "step"
-        idx = findall(x -> (x < xml.ef + δμ/au2ev) && (x > xml.ef + emin/au2ev), xml.e[:, ik])
-        occ = zeros(xml.nbnd)
+        idx = findall(x -> (x < ef + δμ/au2ev) && (x > ef + emin/au2ev), e)
+        occ = zeros(Float64, size(e))
         occ[idx] .= 1.0
     else
         @assert false "Invalid value assigned to 'smearing'."
     end
-    idx = findall(x -> (x < xml.ef + emin/au2ev), xml.e[:, ik])
+    idx = findall(x -> (x < ef + emin/au2ev), e)
     occ[idx] .= 0.0
     return occ
 end
