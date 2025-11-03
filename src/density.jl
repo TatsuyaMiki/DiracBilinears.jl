@@ -12,7 +12,7 @@ function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64
         wfcfile = qedir*"/wfc$(ik).dat"
         wfc = read_wfc(wfcfile)
 
-        occ = calc_occupation(xml.e[:, ik], ef=xml.ef, smearing=smearing, degauss=degauss, δμ=δμ, emin=emin)
+        occ = calc_occupation(xml.e[:, ik]; ef=xml.ef, smearing=smearing, degauss=degauss, δμ=δμ, emin=emin)
         ck, ∇ck = make_c_k(nrmesh_, wfc; n1=n1, n2=n2, n3=n3)
         ukn = calc_fourier_k(nrmesh_, ck)/√(volume)
         ∇ukn = calc_fourier_k(nrmesh_, ∇ck)/√(volume)
