@@ -1,8 +1,9 @@
 
-function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64=0.0, n3::Float64=0.0, nrmesh::Tuple=(0,0,0), δμ::Float64=0.0)
+function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64=0.0, n3::Float64=0.0, nrmesh::Tuple=(0,0,0), δμ::Float64=0.0, emin::Float64=0.0, smearing::String="step", degauss::Float64=0.01)
     ## - n1, n2, n3 are parameters which can be used for calculations in a 2D plane.
     ##   The calculations are performed on a plane perpendicular to ai (i=1,2,3) that passes through ni*ai.
     ## - The chemical potential can be shifted using δμ.
+    ## - The core states can be excluded by using emin.
     xml = read_xml(qedir*"/data-file-schema.xml")
     nrmesh_ = make_nrmesh(xml=xml, nrmesh=nrmesh)
     o = make_zeros_density(calc, nrmesh_)
@@ -11,9 +12,7 @@ function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64
         wfcfile = qedir*"/wfc$(ik).dat"
         wfc = read_wfc(wfcfile)
 
-        idx = findall(x -> x < xml.ef + δμ/au2ev, xml.e[:, ik])
-        occ = zeros(wfc.nbnd)
-        occ[idx] .= 1.0
+        occ = calc_occupation(xml, ik, smearing, degauss, δμ, emin)
         ck, ∇ck = make_c_k(nrmesh_, wfc; n1=n1, n2=n2, n3=n3)
         ukn = calc_fourier_k(nrmesh_, ck)/√(volume)
         ∇ukn = calc_fourier_k(nrmesh_, ∇ck)/√(volume)
@@ -21,6 +20,21 @@ function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64
         o += ok
     end
     return o
+end
+
+function calc_occupation(xml::Xml, ik::Int, smearing::String, degauss::Float64, δμ::Float64, emin::Float64)
+    if (smearing == "m-p") || (smearing == "mp")
+        occ = methfessel_paxton_step.((xml.e[:, ik] .- xml.ef) ./ degauss; n=1)
+    elseif smearing == "step"
+        idx = findall(x -> (x < xml.ef + δμ/au2ev) && (x > xml.ef + emin/au2ev), xml.e[:, ik])
+        occ = zeros(xml.nbnd)
+        occ[idx] .= 1.0
+    else
+        @assert false "Invalid value assigned to 'smearing'."
+    end
+    idx = findall(x -> (x < xml.ef + emin/au2ev), xml.e[:, ik])
+    occ[idx] .= 0.0
+    return occ
 end
 
 function make_nrmesh(;xml::Xml, nrmesh::Tuple=(0,0,0))
@@ -34,19 +48,19 @@ end
 
 function make_zeros_density(calc::String, nrmesh::Tuple)
     if calc == "ρ" || calc == "rho"
-        return zeros(nrmesh...)
+        return zeros(Float64, nrmesh)
     elseif calc == "ms"
-        return zeros(3, nrmesh...)
+        return zeros(Float64, (3, nrmesh...))
     elseif calc == "j"
-        return zeros(3, nrmesh...)
+        return zeros(Float64, (3, nrmesh...))
     elseif calc == "∇ρ" || calc == "nabla_rho"
-        return zeros(3, nrmesh...)
+        return zeros(Float64, (3, nrmesh...))
     elseif calc == "∇ms" || calc == "nabla_ms"
-        return zeros(nrmesh...)
+        return zeros(Float64, nrmesh)
     elseif calc == "τz" || calc == "tau_z" || calc == "chirality"
-        return zeros(nrmesh...)
+        return zeros(Float64, nrmesh)
     elseif calc == "ps"
-        return zeros(3, nrmesh...)
+        return zeros(Float64, (3, nrmesh...))
     else
         @assert false "Invalid value assigned to 'calc'."
     end
@@ -77,7 +91,7 @@ function calc_density_ρ(ukn, occ::Vector{Float64})
 end
 
 function calc_density_ms(ukn, occ::Vector{Float64})
-    return -ES.optein"xyzsb,sti,xyztb,b->ixyz"(conj.(ukn), σ, ukn, occ)
+    return -real.(ES.optein"xyzsb,sti,xyztb,b->ixyz"(conj.(ukn), σ, ukn, occ))
 end
 
 function calc_density_∇ρ(wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
