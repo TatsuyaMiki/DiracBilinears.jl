@@ -287,17 +287,17 @@ function write_grd(f0::Array{Float64, 3}; qedir::String, savefile::String, comme
     na1, na2, na3 = size(f0)
     io = open(savefile, "w")
     PF.@printf(io, "%2s\n", "# "*comment)
-    PF.@printf(io, "%15f%15f%15f%20f%15f%15f\n", LA.norm(a1ang, 2), LA.norm(a2ang, 2), LA.norm(a3ang, 2), α, β, γ)
-    PF.@printf(io, "%15d%10d%10d\n", na1, na2, na3)
+    PF.@printf(io, "%10f%12f%12f%15f%12f%12f\n", LA.norm(a1ang, 2), LA.norm(a2ang, 2), LA.norm(a3ang, 2), α, β, γ)
+    PF.@printf(io, "%10d%10d%10d\n", na1, na2, na3)
     ia = 0
     for ia1 in 1:na1
         for ia2 in 1:na2
             for ia3 in 1:na3
                 ia += 1
                 if ia%6 == 0
-                    PF.@printf(io, "%10f\n", f0[ia1, ia2, ia3])
+                    PF.@printf(io, "%12f\n", f0[ia1, ia2, ia3])
                 else
-                    PF.@printf(io, "%10f", f0[ia1, ia2, ia3])
+                    PF.@printf(io, "%12f", f0[ia1, ia2, ia3])
                 end 
             end
         end
