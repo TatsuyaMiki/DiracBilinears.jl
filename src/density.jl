@@ -198,7 +198,6 @@ function make_c_k(nrmesh::Tuple, wfc::Wfc; n1::Float64=0.0, n2::Float64=0.0, n3:
 end
 
 function write_density(f0::Array{Float64, 3}; qedir::String="manual", savefile::String, atoms::Vector{String}=["none"], atomicpos::Matrix{Float64}=zeros(3,2), a1::Vector{Float64}=zeros(Float64, 3), a2::Vector{Float64}=zeros(Float64, 3), a3::Vector{Float64}=zeros(Float64, 3))
-    bohr2ang = 0.5291772083
     a1ang = zeros(Float64, 3)
     a2ang = zeros(Float64, 3)
     a3ang = zeros(Float64, 3)
@@ -271,5 +270,38 @@ function write_density(f0::Array{Float64, 3}; qedir::String="manual", savefile::
     PF.@printf(io, "%2s\n", "")
     PF.@printf(io, "%2s\n", "END_DATAGRID_3D")
     PF.@printf(io, "%2s\n", "END_BLOCK_DATAGRID_3D")
+    close(io)
+end
+
+angle_vec(a, b) = LA.atand(LA.norm(LA.cross(a,b)), LA.dot(a,b))
+
+function write_grd(f0::Array{Float64, 3}; qedir::String, savefile::String, comment="")
+    xml = read_xml(qedir*"/data-file-schema.xml")
+    a1ang = xml.a1.*bohr2ang
+    a2ang = xml.a2.*bohr2ang
+    a3ang = xml.a3.*bohr2ang
+    α = round(angle_vec(xml.a2, xml.a3))
+    β = round(angle_vec(xml.a3, xml.a1))
+    γ = round(angle_vec(xml.a1, xml.a2))
+    
+    na1, na2, na3 = size(f0)
+    io = open(savefile, "w")
+    PF.@printf(io, "%2s\n", "# "*comment)
+    PF.@printf(io, "%15f%15f%15f%20f%15f%15f\n", LA.norm(a1ang, 2), LA.norm(a2ang, 2), LA.norm(a3ang, 2), α, β, γ)
+    PF.@printf(io, "%15d%10d%10d\n", na1, na2, na3)
+    ia = 0
+    for ia1 in 1:na1
+        for ia2 in 1:na2
+            for ia3 in 1:na3
+                ia += 1
+                if ia%6 == 0
+                    PF.@printf(io, "%10f\n", f0[ia1, ia2, ia3])
+                else
+                    PF.@printf(io, "%10f", f0[ia1, ia2, ia3])
+                end 
+            end
+        end
+    end
+    PF.@printf(io, "%2s\n", "")
     close(io)
 end

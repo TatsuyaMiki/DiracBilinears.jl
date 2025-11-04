@@ -1,6 +1,6 @@
 module DiracBilinears
 
-export calc_density, write_density
+export calc_density, write_density, write_grd
 export calc_wannier_matrix, calc_rgrid, read_hrdat_rgrid, write_wannier_matrix
 export Xml, Wfc, read_wfc, read_xml
 export methfessel_paxton_δ, methfessel_paxton_step, stepc
@@ -48,6 +48,7 @@ const ϵijk = make_ϵijk()
 step(x) = (x > 0.0)*1.0
 
 const au2ev = 27.211396127707
+const bohr2ang = 0.5291772083
 
 include("read_files.jl")
 include("density.jl")
