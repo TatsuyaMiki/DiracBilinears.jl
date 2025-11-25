@@ -26,6 +26,8 @@ struct Xml
     fftgrid::Vector{Int}
     atoms::Vector{String}
     atomicpos::Matrix{Float64}
+    slda::String
+    noncolin::String
 end
 
 function read_wfc(filename::String)
@@ -94,7 +96,8 @@ end
 function read_xml(filename::String)
     doc = EzXML.readxml(filename)
     primates = EzXML.root(doc)
-    nbnd = parse(Int, EzXML.nodecontent(findfirst("//nbnd/text()", primates)))
+    slda = EzXML.nodecontent(findfirst("//lsda/text()", primates))
+    noncolin = EzXML.nodecontent(findfirst("//noncolin/text()", primates))
     nxk = parse(Int, EzXML.nodecontent(findfirst("//nks/text()", primates)))
     a1 = parse.(Float64, split(EzXML.nodecontent(findfirst("//a1/text()", primates))))
     a2 = parse.(Float64, split(EzXML.nodecontent(findfirst("//a2/text()", primates))))
@@ -113,10 +116,21 @@ function read_xml(filename::String)
     fft = findfirst("//fft_grid", primates)
     fftgrid = parse.(Int, [fft["nr1"], fft["nr2"], fft["nr3"]])
     species = EzXML.nodecontent.(findall("//eigenvalues/text()", primates))
-    e = zeros(Float64, (nbnd, nxk))
+    if slda == "false"
+        nbnd = parse(Int, EzXML.nodecontent(findfirst("//nbnd/text()", primates)))
+        e = zeros(Float64, (nbnd, nxk))
+    elseif slda == "true" && noncolin == "false"
+        nbnd_up = parse(Int, EzXML.nodecontent(findfirst("//nbnd_up/text()", primates)))
+        nbnd_dw = parse(Int, EzXML.nodecontent(findfirst("//nbnd_up/text()", primates)))
+        @assert nbnd_up == nbnd_dw 
+        nbnd = nbnd_up
+        e = zeros(Float64, (2nbnd, nxk))
+    else
+        @assert false "Unsupported option: slda == 'true' && noncolin == 'true'."
+    end
     for ik in 1:nxk
-        e[1:end, ik] = parse.(Float64, split(species[ik]))
+        e[:, ik] = parse.(Float64, split(species[ik]))
     end
     ef = parse(Float64, EzXML.nodecontent(findfirst("//fermi_energy/text()", primates)))
-    return Xml(e, ef, nbnd, nxk, a1, a2, a3, fftgrid, atoms, atomicpos)
+    return Xml(e, ef, nbnd, nxk, a1, a2, a3, fftgrid, atoms, atomicpos, slda, noncolin)
 end

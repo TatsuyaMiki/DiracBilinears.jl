@@ -9,9 +9,7 @@ function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64
     o = make_zeros_density(calc, nrmesh_)
     volume = xml.nxk*abs(LA.dot(xml.a3, LA.cross(xml.a1, xml.a2)))
     for ik in 1:xml.nxk
-        wfcfile = qedir*"/wfc$(ik).dat"
-        wfc = read_wfc(wfcfile)
-
+        wfc = qewfc(ik, xml, qedir)
         occ = calc_occupation(xml.e[:, ik]; ef=xml.ef, smearing=smearing, degauss=degauss, δμ=δμ, emin=emin)
         ck, ∇ck = make_c_k(nrmesh_, wfc; n1=n1, n2=n2, n3=n3)
         ukn = calc_fourier_k(nrmesh_, ck)/√(volume)
@@ -22,17 +20,34 @@ function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64
     return o
 end
 
+function qewfc(ik::Int, xml::Xml, qedir::String)
+    if xml.slda == "false"
+        wfc = read_wfc(qedir*"/wfc$(ik).dat")
+    elseif xml.slda == "true" && xml.noncolin == "false"
+        wfcup = read_wfc(qedir*"/wfcup$(ik).dat")
+        wfcdw = read_wfc(qedir*"/wfcdw$(ik).dat")
+        npol = 2
+        nbnd = 2wfcup.nbnd
+        igwx = max(wfcup.igwx, wfcdw.igwx)
+        evc = zeros(ComplexF64, (npol, nbnd, igwx))
+        evc[1, 1:wfcup.nbnd, :] = wfcup.evc
+        evc[2, wfcup.nbnd+1:end, :] = wfcdw.evc
+        wfc = Wfc(wfcup.ik, wfcup.xk, wfcup.ispin, wfcup.Γonly, wfcup.scalef, wfcup.ngw, igwx, npol, nbnd, wfcup.b1, wfcup.b2, wfcup.b3, wfcup.mill, evc)
+    end
+    return wfc
+end
+
 function calc_occupation(e::Vector{Float64}; ef::Float64, smearing::String="step", degauss::Float64=1.0, δμ::Float64=0.0, emin::Float64=0.0)
     if (smearing == "m-p") || (smearing == "mp")
         occ = methfessel_paxton_step.((e .- ef) ./ degauss; n=1)
     elseif smearing == "step"
-        idx = findall(x -> (x < ef + δμ/au2ev) && (x > ef + emin/au2ev), e)
+        idx = findall(x -> (x < ef + δμ/hartree2ev) && (x > ef + emin/hartree2ev), e)
         occ = zeros(Float64, size(e))
         occ[idx] .= 1.0
     else
         @assert false "Invalid value assigned to 'smearing'."
     end
-    idx = findall(x -> (x < ef + emin/au2ev), e)
+    idx = findall(x -> (x < ef + emin/hartree2ev), e)
     occ[idx] .= 0.0
     return occ
 end

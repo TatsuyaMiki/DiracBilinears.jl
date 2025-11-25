@@ -47,7 +47,7 @@ const ϵijk = make_ϵijk()
 δ(x, y) = ==(x, y)*1
 step(x) = (x > 0.0)*1.0
 
-const au2ev = 27.211396127707
+const hartree2ev = 27.211396127707
 const bohr2ang = 0.5291772083
 
 include("read_files.jl")
