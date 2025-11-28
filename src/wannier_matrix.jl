@@ -133,7 +133,7 @@ function calc_wan_ms(cs::Array{ComplexF64, 3}, igwx::Int, nwfc::Int, nxk::Int)
     mk = zeros(ComplexF64, (3, nwfc, nwfc))
     for ipw in 1:igwx
         cuk = cs[ipw, :, :]
-        mk += ES.optein"sm,tn,sti->imn"(conj.(cuk), cuk, σ) ./ nxk
+        mk += -ES.optein"sm,tn,sti->imn"(conj.(cuk), cuk, σ) ./ nxk
     end
     return mk
 end
