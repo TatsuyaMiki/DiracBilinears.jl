@@ -1,6 +1,9 @@
 module DiracBilinears
 
-export calc_density, write_density, write_grd
+export calc_density, make_nrmesh, calc_occupation, is_2d, make_zeros_density, calc_fourier_k, make_c_k,
+    calc_density_ρ, calc_density_ms, calc_density_∇ρ, calc_density_∇ms, calc_density_j, calc_density_τz, calc_density_ps,
+    write_density, write_grd
+export read_lattice, calc_b
 export calc_wannier_matrix, calc_rgrid, read_hrdat_rgrid, write_wannier_matrix
 export Xml, Wfc, read_wfc, read_xml
 export methfessel_paxton_δ, methfessel_paxton_step, stepc

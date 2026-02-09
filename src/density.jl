@@ -1,9 +1,10 @@
 
-function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64=0.0, n3::Float64=0.0, nrmesh::Tuple=(0,0,0), δμ::Float64=0.0, emin::Float64=0.0, smearing::String="step", degauss::Float64=0.01)
+function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64=0.0, n3::Float64=0.0, nrmesh::Tuple=(0,0,0), δμ::Float64=0.0, emin::Float64=100000.0, smearing::String="step", degauss::Float64=0.01)
     ## - n1, n2, n3 are parameters which can be used for calculations in a 2D plane.
     ##   The calculations are performed on a plane perpendicular to ai (i=1,2,3) that passes through ni*ai.
-    ## - The chemical potential can be shifted using δμ.
-    ## - The core states can be excluded by using emin.
+    ## - The chemical potential can be shifted using δμ (eV).
+    ## - The core levels can be excluded by using emin (eV).
+    is∇u = is∇ukn(calc)
     xml = read_xml(qedir*"/data-file-schema.xml")
     nrmesh_ = make_nrmesh(xml=xml, nrmesh=nrmesh)
     o = make_zeros_density(calc, nrmesh_)
@@ -11,14 +12,15 @@ function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64
     for ik in 1:xml.nxk
         wfc = qewfc(ik, xml, qedir)
         occ = calc_occupation(xml.e[:, ik]; ef=xml.ef, smearing=smearing, degauss=degauss, δμ=δμ, emin=emin)
-        ck, ∇ck = make_c_k(nrmesh_, wfc; n1=n1, n2=n2, n3=n3)
+        ck, ∇ck = make_c_k(nrmesh_, wfc; n1=n1, n2=n2, n3=n3, is∇u=is∇u)
         ukn = calc_fourier_k(nrmesh_, ck)/√(volume)
-        ∇ukn = calc_fourier_k(nrmesh_, ∇ck)/√(volume)
-        ok = calc_density_ok(calc, nrmesh_, wfc, ukn, ∇ukn, occ)
-        o += ok
+        ∇ukn = is∇u == true ? calc_fourier_k(nrmesh_, ∇ck)/√(volume) : ∇ck
+        o += calc_density_ok(calc, nrmesh_, wfc, ukn, ∇ukn, occ)
     end
     return o
 end
+
+is∇ukn(calc::String) = calc in ["j", "∇ρ", "nabla_rho", "∇ms", "nabla_ms", "τz", "tau_z", "chirality", "ps"] 
 
 function qewfc(ik::Int, xml::Xml, qedir::String)
     if xml.slda == "false"
@@ -37,18 +39,20 @@ function qewfc(ik::Int, xml::Xml, qedir::String)
     return wfc
 end
 
-function calc_occupation(e::Vector{Float64}; ef::Float64, smearing::String="step", degauss::Float64=1.0, δμ::Float64=0.0, emin::Float64=0.0)
+function calc_occupation(e::Vector{Float64}; ef::Float64, smearing::String="step", degauss::Float64=1.0, δμ::Float64=0.0, emin::Float64=100000.0)
     if (smearing == "m-p") || (smearing == "mp")
-        occ = methfessel_paxton_step.((e .- ef) ./ degauss; n=1)
+        occ = methfessel_paxton_step.((e .- (ef + δμ/hartree2ev)) ./ degauss; n=1)
     elseif smearing == "step"
-        idx = findall(x -> (x < ef + δμ/hartree2ev) && (x > ef + emin/hartree2ev), e)
+        idx = findall(x -> (x < ef + δμ/hartree2ev), e)
         occ = zeros(Float64, size(e))
         occ[idx] .= 1.0
     else
         @assert false "Invalid value assigned to 'smearing'."
     end
-    idx = findall(x -> (x < ef + emin/hartree2ev), e)
-    occ[idx] .= 0.0
+    if emin < 100000.0
+        idx = findall(x -> (x < ef + emin/hartree2ev), e)
+        occ[idx] .= 0.0
+    end
     return occ
 end
 
@@ -180,39 +184,69 @@ function calc_fourier_k(nrmesh::Tuple, ck)
     end
 end
 
-function make_c_k(nrmesh::Tuple, wfc::Wfc; n1::Float64=0.0, n2::Float64=0.0, n3::Float64=0.0)
-    hmin, hmax = extrema(wfc.mill[1,:])
-    kmin, kmax = extrema(wfc.mill[2,:])
-    lmin, lmax = extrema(wfc.mill[3,:])
-    @assert hmax - hmin + 1 <= nrmesh[1] || nrmesh[1] == 1 "'nrmesh' are too small."
-    @assert kmax - kmin + 1 <= nrmesh[2] || nrmesh[2] == 1 "'nrmesh' are too small."
-    @assert lmax - lmin + 1 <= nrmesh[3] || nrmesh[3] == 1 "'nrmesh' are too small."
+function is_2d(nrmesh::Tuple)
+    is1 = nrmesh[1] == 1
+    is2 = nrmesh[2] == 1
+    is3 = nrmesh[3] == 1
+    return is1 || is2 || is3, is1, is2, is3
+end
+
+function make_c_k(nrmesh::Tuple, wfc::Wfc; n1::Float64=0.0, n2::Float64=0.0, n3::Float64=0.0, is∇u=false)
+    is2d, is1, is2, is3 = is_2d(nrmesh)
+    hmin, hmax = extrema(@view wfc.mill[1, :])
+    kmin, kmax = extrema(@view wfc.mill[2, :])
+    lmin, lmax = extrema(@view wfc.mill[3, :])
+    @assert hmax - hmin + 1 <= nrmesh[1] || is1 "'nrmesh' are too small."
+    @assert kmax - kmin + 1 <= nrmesh[2] || is2 "'nrmesh' are too small."
+    @assert lmax - lmin + 1 <= nrmesh[3] || is3 "'nrmesh' are too small."
     i1 = abs(-div(nrmesh[1], 2) - hmin)
     i2 = abs(-div(nrmesh[2], 2) - kmin)
     i3 = abs(-div(nrmesh[3], 2) - lmin)
-    ns1 = (hmax - hmin) * (nrmesh[1] == 1) + nrmesh[1] * (nrmesh[1] != 1)
-    ns2 = (kmax - kmin) * (nrmesh[2] == 1) + nrmesh[2] * (nrmesh[2] != 1)
-    ns3 = (lmax - lmin) * (nrmesh[3] == 1) + nrmesh[3] * (nrmesh[3] != 1)
-    epn1 = exp(im*2π*n1)
-    epn2 = exp(im*2π*n2)
-    epn3 = exp(im*2π*n3)
-    ihs = wfc.mill[1, :] .- hmin .+ 1
-    iks = wfc.mill[2, :] .- kmin .+ 1
-    ils = wfc.mill[3, :] .- lmin .+ 1
+    ns1 = (hmax - hmin) * is1 + nrmesh[1] * (!is1)
+    ns2 = (kmax - kmin) * is2 + nrmesh[2] * (!is2)
+    ns3 = (lmax - lmin) * is3 + nrmesh[3] * (!is3)
+    ihs = i1 .+ (@view wfc.mill[1, :]) .- hmin .+ 1
+    iks = i2 .+ (@view wfc.mill[2, :]) .- kmin .+ 1
+    ils = i3 .+ (@view wfc.mill[3, :]) .- lmin .+ 1
+    if is2d == true
+        epn1 = exp(im*2π*n1)
+        epn2 = exp(im*2π*n2)
+        epn3 = exp(im*2π*n3)
+    end
+
     cktmp = zeros(ComplexF64, (ns1, ns2, ns3, wfc.npol, wfc.nbnd))
-    ∇cktmp = zeros(ComplexF64, (ns1, ns2, ns3, wfc.npol, wfc.nbnd, 3))
-    for ipw in 1:wfc.igwx
-        gvec = wfc.mill[1, ipw] * wfc.b1 + wfc.mill[2, ipw] * wfc.b2 + wfc.mill[3, ipw] * wfc.b3
-        epn = epn1^(wfc.mill[1, ipw] * (nrmesh[1] == 1)) * epn2^(wfc.mill[2, ipw] * (nrmesh[2] == 1)) * epn3^(wfc.mill[3, ipw] * (nrmesh[3] == 1))
-        cktmp[i1 + ihs[ipw], i2 + iks[ipw], i3 + ils[ipw], :, :] .= wfc.evc[:, :, ipw] * epn
-        for ii in 1:3
-            ∇cktmp[i1 + ihs[ipw], i2 + iks[ipw], i3 + ils[ipw], :, :, ii] .= gvec[ii] * wfc.evc[:, :, ipw] * epn
+    ∇cktmp = is∇u == true ? zeros(ComplexF64, (ns1, ns2, ns3, wfc.npol, wfc.nbnd, 3)) : Array{ComplexF64}(undef, 1,1,1,1,1,1)
+    @inbounds for ipw in 1:wfc.igwx
+        h, k, l = wfc.mill[:, ipw]
+        if is2d == true
+            epn = epn1^(is1 ? h : 0) * epn2^(is2 ? k : 0) * epn3^(is3 ? l : 0)
+        else
+            epn = 1.0
+        end
+        i1p, i2p, i3p = ihs[ipw], iks[ipw], ils[ipw]
+        evcepn = wfc.evc[:, :, ipw] .* epn
+        cktmp[i1p, i2p, i3p, :, :] .= evcepn
+        if is∇u == true
+            gvec = h * wfc.b1 + k * wfc.b2 + l * wfc.b3 
+            for ii in 1:3
+                ∇cktmp[i1p, i2p, i3p, :, :, ii] .= evcepn .* gvec[ii]
+            end
         end
     end
-    return FFTW.ifftshift(cktmp, 1:3), FFTW.ifftshift(∇cktmp, 1:3)
+    ck = FFTW.ifftshift(cktmp, 1:3)
+    ∇ck = is∇u == true ? FFTW.ifftshift(∇cktmp, 1:3) : ∇cktmp
+    return ck, ∇ck
 end
 
-function write_density(f0::Array{Float64, 3}; qedir::String="manual", savefile::String, atoms::Vector{String}=["none"], atomicpos::Matrix{Float64}=zeros(3,2), a1::Vector{Float64}=zeros(Float64, 3), a2::Vector{Float64}=zeros(Float64, 3), a3::Vector{Float64}=zeros(Float64, 3))
+function write_density(f0::Array{Float64, 3}; qedir::String="manual", savefile::String, atoms::Vector{String}=["none"], atomicpos::Matrix{Float64}=zeros(3,2), a1::Vector{Float64}=zeros(Float64, 3), a2::Vector{Float64}=zeros(Float64, 3), a3::Vector{Float64}=zeros(Float64, 3), comment::String="# Written on "*"$(Dates.now())", format="xsf")
+    if format == "xsf"
+        write_xsf(f0; qedir=qedir, savefile=savefile, atoms=atoms, atomicpos=atomicpos, a1=a1, a2=a2, a3=a3, comment=comment)
+    elseif format == "grd"
+        write_grd(f0; qedir=qedir, savefile=savefile, comment=comment)
+    end
+end
+
+function write_xsf(f0::Array{Float64, 3}; qedir::String, savefile::String, atoms::Vector{String}, atomicpos::Matrix{Float64}, a1::Vector{Float64}, a2::Vector{Float64}, a3::Vector{Float64}, comment::String)
     a1ang = zeros(Float64, 3)
     a2ang = zeros(Float64, 3)
     a3ang = zeros(Float64, 3)
@@ -240,7 +274,7 @@ function write_density(f0::Array{Float64, 3}; qedir::String="manual", savefile::
     fplot[end, end, 1:end-1] = copy(f0[1,1,:])
     fplot[end, end, end] = copy(f0[1,1,1])
     io = open(savefile, "w")
-    PF.@printf(io, "%2s\n", "# Written on "*"$(Dates.now())")
+    PF.@printf(io, "%2s\n", comment)
     PF.@printf(io, "%2s\n", "CRYSTAL")
     PF.@printf(io, "%2s\n", "PRIMVEC")
     PF.@printf(io, "%15f%10f%10f\n", a1ang[1], a1ang[2], a1ang[3])
@@ -290,7 +324,7 @@ end
 
 angle_vec(a, b) = LA.atand(LA.norm(LA.cross(a,b)), LA.dot(a,b))
 
-function write_grd(f0::Array{Float64, 3}; qedir::String, savefile::String, comment="")
+function write_grd(f0::Array{Float64, 3}; qedir::String, savefile::String, comment::String)
     xml = read_xml(qedir*"/data-file-schema.xml")
     a1ang = xml.a1.*bohr2ang
     a2ang = xml.a2.*bohr2ang
