@@ -53,7 +53,7 @@ function calc_rgrid(;mpmesh::Tuple=(0,0,0), rfile::String="none")
     return rgrid, degen
 end
 
-function read_hrdat_rgrid(hrfile::String)
+function read_hrdat_rgrid(;hrfile::String)
     open(hrfile, "r") do io
         str = readline(io) # comment
         norb = parse(Int, readline(io)) # norb

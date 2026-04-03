@@ -238,31 +238,36 @@ function make_c_k(nrmesh::Tuple, wfc::Wfc; n1::Float64=0.0, n2::Float64=0.0, n3:
     return ck, ∇ck
 end
 
-function write_density(f0::Array{Float64, 3}; qedir::String="manual", savefile::String, atoms::Vector{String}=["none"], atomicpos::Matrix{Float64}=zeros(3,2), a1::Vector{Float64}=zeros(Float64, 3), a2::Vector{Float64}=zeros(Float64, 3), a3::Vector{Float64}=zeros(Float64, 3), comment::String="# Written on "*"$(Dates.now())", format="xsf")
+function write_density(f0::Array{Float64, 3}; qedir::String="manual", savefile::String, atoms::Vector{String}=["none"], atomicpos::Matrix{Float64}=zeros(3,2), a1::Vector{Float64}=zeros(Float64, 3), a2::Vector{Float64}=zeros(Float64, 3), a3::Vector{Float64}=zeros(Float64, 3), comment::String="# Written on "*"$(Dates.now())", format::String="xsf", unit::String="bohr")
+    if qedir != "manual"
+        @assert a1 == zeros(Float64, 3) && a2 == zeros(Float64, 3) && a3 == zeros(Float64, 3)
+        xml = read_xml(qedir*"/data-file-schema.xml")
+        a1 = xml.a1
+        a2 = xml.a2
+        a3 = xml.a3
+        atoms = xml.atoms
+        atomicpos = xml.atomicpos
+    end
+    f0, a1, a2, a3, atomicpos = convert_units(f0, a1, a2, a3, atomicpos; unit=unit)
     if format == "xsf"
-        write_xsf(f0; qedir=qedir, savefile=savefile, atoms=atoms, atomicpos=atomicpos, a1=a1, a2=a2, a3=a3, comment=comment)
+        write_xsf(f0; savefile=savefile, a1=a1, a2=a2, a3=a3, atoms=atoms, atomicpos=atomicpos, comment=comment)
     elseif format == "grd"
-        write_grd(f0; qedir=qedir, savefile=savefile, comment=comment)
+        write_grd(f0; savefile=savefile, a1=a1, a2=a2, a3=a3, comment=comment)
     end
 end
 
-function write_xsf(f0::Array{Float64, 3}; qedir::String, savefile::String, atoms::Vector{String}, atomicpos::Matrix{Float64}, a1::Vector{Float64}, a2::Vector{Float64}, a3::Vector{Float64}, comment::String)
-    a1ang = zeros(Float64, 3)
-    a2ang = zeros(Float64, 3)
-    a3ang = zeros(Float64, 3)
-    if qedir == "manual"
-        a1ang = a1.*bohr2ang
-        a2ang = a2.*bohr2ang
-        a3ang = a3.*bohr2ang
-    else
-        @assert a1 == zeros(Float64, 3) && a2 == zeros(Float64, 3) && a3 == zeros(Float64, 3)
-        xml = read_xml(qedir*"/data-file-schema.xml")
-        a1ang = xml.a1.*bohr2ang
-        a2ang = xml.a2.*bohr2ang
-        a3ang = xml.a3.*bohr2ang
-        atoms = xml.atoms
-        atomicpos = xml.atomicpos .* bohr2ang
+function convert_units(f0::Array{Float64, 3}, a1::Vector{Float64}, a2::Vector{Float64}, a3::Vector{Float64}, atomicpos::Matrix{Float64}; unit::String)
+    if unit=="ang"
+        f0 ./= bohr2ang^3
+        a1 .*= bohr2ang
+        a2 .*= bohr2ang
+        a3 .*= bohr2ang
+        atomicpos .*= bohr2ang
     end
+    return f0, a1, a2, a3, atomicpos
+end
+
+function write_xsf(f0::Array{Float64, 3}; savefile::String, a1::Vector{Float64}, a2::Vector{Float64}, a3::Vector{Float64}, atoms::Vector{String}, atomicpos::Matrix{Float64}, comment::String)
     na1, na2, na3 = size(f0)
     fplot = zeros(Float64, (na1+1, na2+1, na3+1))
     fplot[1:end-1, 1:end-1, 1:end-1] = copy(f0)
@@ -277,13 +282,13 @@ function write_xsf(f0::Array{Float64, 3}; qedir::String, savefile::String, atoms
     PF.@printf(io, "%2s\n", comment)
     PF.@printf(io, "%2s\n", "CRYSTAL")
     PF.@printf(io, "%2s\n", "PRIMVEC")
-    PF.@printf(io, "%15f%10f%10f\n", a1ang[1], a1ang[2], a1ang[3])
-    PF.@printf(io, "%15f%10f%10f\n", a2ang[1], a2ang[2], a2ang[3])
-    PF.@printf(io, "%15f%10f%10f\n", a3ang[1], a3ang[2], a3ang[3])
+    PF.@printf(io, "%15f%10f%10f\n", a1[1], a1[2], a1[3])
+    PF.@printf(io, "%15f%10f%10f\n", a2[1], a2[2], a2[3])
+    PF.@printf(io, "%15f%10f%10f\n", a3[1], a3[2], a3[3])
     PF.@printf(io, "%2s\n", "CONVVEC")
-    PF.@printf(io, "%15f%10f%10f\n", a1ang[1], a1ang[2], a1ang[3])
-    PF.@printf(io, "%15f%10f%10f\n", a2ang[1], a2ang[2], a2ang[3])
-    PF.@printf(io, "%15f%10f%10f\n", a3ang[1], a3ang[2], a3ang[3])
+    PF.@printf(io, "%15f%10f%10f\n", a1[1], a1[2], a1[3])
+    PF.@printf(io, "%15f%10f%10f\n", a2[1], a2[2], a2[3])
+    PF.@printf(io, "%15f%10f%10f\n", a3[1], a3[2], a3[3])
     natom = length(atoms)
     if atoms[1] != "none"
         PF.@printf(io, "%2s\n", "PRIMCOORD")
@@ -300,9 +305,9 @@ function write_xsf(f0::Array{Float64, 3}; qedir::String, savefile::String, atoms
     PF.@printf(io, "%2s\n", "BEGIN_DATAGRID_3D_UNKNOWN")
     PF.@printf(io, "%15d%10d%10d\n", na1+1, na2+1, na3+1)
     PF.@printf(io, "%15f%10f%10f\n", 0.0, 0.0, 0.0)
-    PF.@printf(io, "%15f%10f%10f\n", a1ang[1], a1ang[2], a1ang[3])
-    PF.@printf(io, "%15f%10f%10f\n", a2ang[1], a2ang[2], a2ang[3])
-    PF.@printf(io, "%15f%10f%10f\n", a3ang[1], a3ang[2], a3ang[3])
+    PF.@printf(io, "%15f%10f%10f\n", a1[1], a1[2], a1[3])
+    PF.@printf(io, "%15f%10f%10f\n", a2[1], a2[2], a2[3])
+    PF.@printf(io, "%15f%10f%10f\n", a3[1], a3[2], a3[3])
     ia = 0
     for ia3 in 1:na3+1
         for ia2 in 1:na2+1
@@ -324,19 +329,15 @@ end
 
 angle_vec(a, b) = LA.atand(LA.norm(LA.cross(a,b)), LA.dot(a,b))
 
-function write_grd(f0::Array{Float64, 3}; qedir::String, savefile::String, comment::String)
-    xml = read_xml(qedir*"/data-file-schema.xml")
-    a1ang = xml.a1.*bohr2ang
-    a2ang = xml.a2.*bohr2ang
-    a3ang = xml.a3.*bohr2ang
-    α = round(angle_vec(xml.a2, xml.a3))
-    β = round(angle_vec(xml.a3, xml.a1))
-    γ = round(angle_vec(xml.a1, xml.a2))
+function write_grd(f0::Array{Float64, 3}; savefile::String, a1::Vector{Float64}, a2::Vector{Float64}, a3::Vector{Float64}, comment::String)
+    α = round(angle_vec(a2, a3))
+    β = round(angle_vec(a3, a1))
+    γ = round(angle_vec(a1, a2))
     
     na1, na2, na3 = size(f0)
     io = open(savefile, "w")
     PF.@printf(io, "%2s\n", "# "*comment)
-    PF.@printf(io, "%10f%12f%12f%15f%12f%12f\n", LA.norm(a1ang, 2), LA.norm(a2ang, 2), LA.norm(a3ang, 2), α, β, γ)
+    PF.@printf(io, "%10f%12f%12f%15f%12f%12f\n", LA.norm(a1, 2), LA.norm(a2, 2), LA.norm(a3, 2), α, β, γ)
     PF.@printf(io, "%10d%10d%10d\n", na1, na2, na3)
     ia = 0
     for ia1 in 1:na1
