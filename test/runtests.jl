@@ -77,19 +77,22 @@ end
 
     # calc_fourier_k behavior for reduced dimensions
     ck = reshape(ComplexF64.(1:4), (1, 2, 2))
-    ukn1 = calc_fourier_k((1, 2, 2), ck)
-    ukn1_ref = FFTW.bfft(sum(ck, dims=1), [2, 3])
-    @test ukn1 == ukn1_ref
+    ukn1 = copy(ck)
+    calc_fourier_k!(ukn1; nrmesh=(1, 2, 2))
+    ukn1ref = FFTW.bfft(sum(ck, dims=1), [2, 3])
+    @test ukn1 == ukn1ref
 
     ck2 = reshape(ComplexF64.(1:4), (2, 1, 2))
-    ukn2 = calc_fourier_k((2, 1, 2), ck2)
-    ukn2_ref = FFTW.bfft(sum(ck2, dims=2), [1, 3])
-    @test ukn2 == ukn2_ref
+    ukn2 = copy(ck2)
+    calc_fourier_k!(ukn2; nrmesh=(2, 1, 2))
+    ukn2ref = FFTW.bfft(sum(ck2, dims=2), [1, 3])
+    @test ukn2 == ukn2ref
 
     ck3 = reshape(ComplexF64.(1:4), (2, 2, 1))
-    ukn3 = calc_fourier_k((2, 2, 1), ck3)
-    ukn3_ref = FFTW.bfft(sum(ck3, dims=3), [1, 2])
-    @test ukn3 == ukn3_ref
+    ukn3 = copy(ck3)
+    ukn3 = calc_fourier_k!(ukn3; nrmesh=(2, 2, 1))
+    ukn3ref = FFTW.bfft(sum(ck3, dims=3), [1, 2])
+    @test ukn3 == ukn3ref
 end
 
 @testset "density calculations" begin
@@ -114,36 +117,44 @@ end
 
     # ρ and ms with a simple spinor
     ukn1 = reshape(ComplexF64[1.0 + 0.0im, 0.0 + 1.0im], (1, 1, 1, 2, 1))
-    rho = calc_density_ρ(copy(ukn1), occ)
-    @test isapprox(rho[1, 1, 1], 2.0, atol=1e-12)
-    ms = calc_density_ms(copy(ukn1), occ)
+    ρ = zeros(Float64, 1, 1, 1)
+    calc_density_ρ!(ρ; ukn=copy(ukn1), occ=occ)
+    @test isapprox(ρ[1, 1, 1], 2.0, atol=1e-12)
+
+    ms = zeros(Float64, 3, 1, 1, 1)
+    calc_density_ms!(ms; ukn=copy(ukn1), occ=occ)
     @test size(ms) == (3, 1, 1, 1)
     @test isapprox(ms[:, 1, 1, 1], [0.0, -2.0, 0.0], atol=1e-12)
 
     # ∇ρ with imaginary gradient along x
-    ∇ukn1 = zeros(ComplexF64, (1, 1, 1, 2, 1, 3))
+    ∇ukn1 = zeros(ComplexF64, 1, 1, 1, 2, 1, 3)
     ∇ukn1[:, :, :, :, :, 1] .= im .* ukn1
-    grad_rho = calc_density_∇ρ(wfc, copy(ukn1), ∇ukn1, occ)
-    @test isapprox(grad_rho[:, 1, 1, 1], [-4.0, 0.0, 0.0], atol=1e-12)
+    ∇ρ = zeros(Float64, 3, 1, 1, 1)
+    calc_density_∇ρ!(∇ρ; ukn=copy(ukn1), ∇ukn=∇ukn1, occ=occ)
+    @test isapprox(∇ρ[:, 1, 1, 1], [-4.0, 0.0, 0.0], atol=1e-12)
 
     # ∇ms with imaginary gradient along y
-    ∇ukn2 = zeros(ComplexF64, (1, 1, 1, 2, 1, 3))
+    ∇ukn2 = zeros(ComplexF64, 1, 1, 1, 2, 1, 3)
     ∇ukn2[:, :, :, :, :, 2] .= im .* ukn1
-    grad_ms = calc_density_∇ms(wfc, copy(ukn1), ∇ukn2, occ)
-    @test isapprox(grad_ms[1, 1, 1], 4.0, atol=1e-12)
+    ∇ms = zeros(Float64, 3, 1, 1, 1)
+    calc_density_∇ms!(∇ms; wfc=wfc, ukn=copy(ukn1), ∇ukn=∇ukn2, occ=occ)
+    @test isapprox(∇ms[1, 1, 1], 4.0, atol=1e-12)
 
     # j, τz, ps with a real spinor
     ukn2 = reshape(ComplexF64[1.0 + 0.0im, 1.0 + 0.0im], (1, 1, 1, 2, 1))
-    ∇ukn3 = zeros(ComplexF64, (1, 1, 1, 2, 1, 3))
+    ∇ukn3 = zeros(ComplexF64, 1, 1, 1, 2, 1, 3)
     ∇ukn3[:, :, :, :, :, 1] .= ukn2
 
-    j = calc_density_j(nrmesh, wfc, copy(ukn2), ∇ukn3, occ)
+    j = zeros(Float64, 3, 1, 1, 1)
+    calc_density_j!(j; wfc=wfc, ukn=copy(ukn2), ∇ukn=∇ukn3, occ=occ)
     @test isapprox(j[:, 1, 1, 1], [4.0, 0.0, 0.0], atol=1e-12)
 
-    τz = calc_density_τz(nrmesh, wfc, copy(ukn2), ∇ukn3, occ)
+    τz = zeros(Float64, 1, 1, 1)
+    calc_density_τz!(τz; wfc=wfc, ukn=copy(ukn2), ∇ukn=∇ukn3, occ=occ)
     @test isapprox(τz[1, 1, 1], 4.0, atol=1e-12)
 
-    ps = calc_density_ps(nrmesh, wfc, copy(ukn2), ∇ukn3, occ)
+    ps = zeros(Float64, 3, 1, 1, 1)
+    calc_density_ps!(ps; wfc=wfc, ukn=copy(ukn2), ∇ukn=∇ukn3, occ=occ)
     @test isapprox(ps[:, 1, 1, 1], [0.0, 0.0, 0.0], atol=1e-12)
 end
 

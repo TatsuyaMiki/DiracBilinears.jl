@@ -1,3 +1,4 @@
+
 function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64=0.0, n3::Float64=0.0, nrmesh::Tuple=(0,0,0), δμ::Float64=0.0, emin::Float64=100000.0, smearing::String="step", degauss::Float64=0.01)
     ## - n1, n2, n3 are parameters which can be used for calculations in a 2D plane.
     ##   The calculations are performed on a plane perpendicular to ai (i=1,2,3) that passes through ni*ai.
@@ -8,15 +9,15 @@ function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64
     nrmesh_ = make_nrmesh(xml=xml, nrmesh=nrmesh)
     o = make_zeros_density(calc, nrmesh_)
     volume = xml.nxk * abs(LA.dot(xml.a3, LA.cross(xml.a1, xml.a2)))
-    for ik in 1:1
-        wfc = DB.qewfc(ik, xml, qedir)
-        occ = DB.calc_occupation(xml.e[:, ik]; ef=xml.ef, smearing=smearing, degauss=degauss, δμ=δμ, emin=emin)
-        ukn, ∇ukn = DB.make_c_k(nrmesh_, wfc; n1=n1, n2=n2, n3=n3, is∇u=is∇u)
-        DB.calc_fourier_k!(ukn; nrmesh=nrmesh_)
+    for ik in 1:xml.nxk
+        wfc = qewfc(ik, xml, qedir)
+        occ = calc_occupation(xml.e[:, ik]; ef=xml.ef, smearing=smearing, degauss=degauss, δμ=δμ, emin=emin)
+        ukn, ∇ukn = make_c_k(nrmesh_, wfc; n1=n1, n2=n2, n3=n3, is∇u=is∇u)
+        calc_fourier_k!(ukn; nrmesh=nrmesh_)
         ukn ./= √(volume)
-        is∇u == true ? DB.calc_fourier_k!(∇ukn; nrmesh=nrmesh_) : ∇ukn
+        is∇u == true ? calc_fourier_k!(∇ukn; nrmesh=nrmesh_) : ∇ukn
         ∇ukn ./= √(volume)
-        DB.calc_density_ok!(o; calc=calc, nrmesh=nrmesh_, wfc=wfc, ukn=ukn, ∇ukn=∇ukn, occ=occ)
+        calc_density_ok!(o; calc=calc, nrmesh=nrmesh_, wfc=wfc, ukn=ukn, ∇ukn=∇ukn, occ=occ)
     end
     return o
 end
@@ -68,19 +69,19 @@ end
 
 function make_zeros_density(calc::String, nrmesh::Tuple)
     if calc == "ρ" || calc == "rho"
-        return zeros(Float64, nrmesh)
+        return zeros(Float64, nrmesh[1], nrmesh[2], nrmesh[3])
     elseif calc == "ms"
-        return zeros(Float64, (3, nrmesh...))
+        return zeros(Float64, 3, nrmesh[1], nrmesh[2], nrmesh[3])
     elseif calc == "j"
-        return zeros(Float64, (3, nrmesh...))
+        return zeros(Float64, 3, nrmesh[1], nrmesh[2], nrmesh[3])
     elseif calc == "∇ρ" || calc == "nabla_rho"
-        return zeros(Float64, (3, nrmesh...))
+        return zeros(Float64, 3, nrmesh[1], nrmesh[2], nrmesh[3])
     elseif calc == "∇ms" || calc == "nabla_ms"
-        return zeros(Float64, nrmesh)
+        return zeros(Float64, nrmesh[1], nrmesh[2], nrmesh[3])
     elseif calc == "τz" || calc == "tau_z" || calc == "chirality"
-        return zeros(Float64, nrmesh)
+        return zeros(Float64, nrmesh[1], nrmesh[2], nrmesh[3])
     elseif calc == "ps"
-        return zeros(Float64, (3, nrmesh...))
+        return zeros(Float64, 3, nrmesh[1], nrmesh[2], nrmesh[3])
     else
         error("Invalid value assigned to 'calc'")
     end
@@ -273,15 +274,15 @@ end
 
 function calc_fourier_k!(ukn; nrmesh::Tuple)
     if nrmesh[1] == 1
-        ukn = sum(ukn, dims=1)
+        ukn .= sum(ukn, dims=1)
         FFTW.bfft!(ukn, [2,3])
         return ukn
     elseif nrmesh[2] == 1
-        ukn = sum(ukn, dims=2)
+        ukn .= sum(ukn, dims=2)
         FFTW.bfft!(ukn, [1,3])
         return ukn
     elseif nrmesh[3] == 1
-        ukn = sum(ukn, dims=3)
+        ukn .= sum(ukn, dims=3)
         FFTW.bfft!(ukn, [1,2])
         return ukn
     else
