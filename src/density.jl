@@ -1,4 +1,3 @@
-
 function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64=0.0, n3::Float64=0.0, nrmesh::Tuple=(0,0,0), δμ::Float64=0.0, emin::Float64=100000.0, smearing::String="step", degauss::Float64=0.01)
     ## - n1, n2, n3 are parameters which can be used for calculations in a 2D plane.
     ##   The calculations are performed on a plane perpendicular to ai (i=1,2,3) that passes through ni*ai.
@@ -8,14 +7,16 @@ function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64
     xml = read_xml(qedir*"/data-file-schema.xml")
     nrmesh_ = make_nrmesh(xml=xml, nrmesh=nrmesh)
     o = make_zeros_density(calc, nrmesh_)
-    volume = xml.nxk*abs(LA.dot(xml.a3, LA.cross(xml.a1, xml.a2)))
-    for ik in 1:xml.nxk
-        wfc = qewfc(ik, xml, qedir)
-        occ = calc_occupation(xml.e[:, ik]; ef=xml.ef, smearing=smearing, degauss=degauss, δμ=δμ, emin=emin)
-        ck, ∇ck = make_c_k(nrmesh_, wfc; n1=n1, n2=n2, n3=n3, is∇u=is∇u)
-        ukn = calc_fourier_k(nrmesh_, ck)/√(volume)
-        ∇ukn = is∇u == true ? calc_fourier_k(nrmesh_, ∇ck)/√(volume) : ∇ck
-        o += calc_density_ok(calc, nrmesh_, wfc, ukn, ∇ukn, occ)
+    volume = xml.nxk * abs(LA.dot(xml.a3, LA.cross(xml.a1, xml.a2)))
+    for ik in 1:1
+        wfc = DB.qewfc(ik, xml, qedir)
+        occ = DB.calc_occupation(xml.e[:, ik]; ef=xml.ef, smearing=smearing, degauss=degauss, δμ=δμ, emin=emin)
+        ukn, ∇ukn = DB.make_c_k(nrmesh_, wfc; n1=n1, n2=n2, n3=n3, is∇u=is∇u)
+        DB.calc_fourier_k!(ukn; nrmesh=nrmesh_)
+        ukn ./= √(volume)
+        is∇u == true ? DB.calc_fourier_k!(∇ukn; nrmesh=nrmesh_) : ∇ukn
+        ∇ukn ./= √(volume)
+        DB.calc_density_ok!(o; calc=calc, nrmesh=nrmesh_, wfc=wfc, ukn=ukn, ∇ukn=∇ukn, occ=occ)
     end
     return o
 end
@@ -31,7 +32,7 @@ function qewfc(ik::Int, xml::Xml, qedir::String)
         npol = 2
         nbnd = 2wfcup.nbnd
         igwx = max(wfcup.igwx, wfcdw.igwx)
-        evc = zeros(ComplexF64, (npol, nbnd, igwx))
+        evc = zeros(ComplexF64, npol, nbnd, igwx)
         evc[1, 1:wfcup.nbnd, :] = wfcup.evc
         evc[2, wfcup.nbnd+1:end, :] = wfcdw.evc
         wfc = Wfc(wfcup.ik, wfcup.xk, wfcup.ispin, wfcup.Γonly, wfcup.scalef, wfcup.ngw, igwx, npol, nbnd, wfcup.b1, wfcup.b2, wfcup.b3, wfcup.mill, evc)
@@ -81,44 +82,66 @@ function make_zeros_density(calc::String, nrmesh::Tuple)
     elseif calc == "ps"
         return zeros(Float64, (3, nrmesh...))
     else
-        @assert false "Invalid value assigned to 'calc'."
+        error("Invalid value assigned to 'calc'")
     end
 end
 
-function calc_density_ok(calc::String, nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
+
+function calc_density_ok!(out; calc::String, nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
     if calc == "ρ" || calc == "rho"
-        return calc_density_ρ(ukn, occ)
+        calc_density_ρ!(out; ukn=ukn, occ=occ)
+        return out
     elseif calc == "ms"
-        return calc_density_ms(ukn, occ)
+        calc_density_ms!(out; ukn=ukn, occ=occ)
+        return out
     elseif calc == "j"
-        return return calc_density_j(nrmesh, wfc, ukn, ∇ukn, occ)
+        calc_density_j!(out; wfc=wfc, ukn=ukn, ∇ukn=∇ukn, occ=occ)
+        return out
     elseif calc == "∇ρ" || calc == "nabla_rho"
-        return calc_density_∇ρ(wfc, ukn, ∇ukn, occ)
+        calc_density_∇ρ!(out; ukn=ukn, ∇ukn=∇ukn, occ=occ)
+        return out
     elseif calc == "∇ms" || calc == "nabla_ms"
-        return calc_density_∇ms(wfc, ukn, ∇ukn, occ)
+        calc_density_∇ms!(out; wfc=wfc, ukn=ukn, ∇ukn=∇ukn, occ=occ)
+        return out
     elseif calc == "τz" || calc == "tau_z" || calc == "chirality"
-        return calc_density_τz(nrmesh, wfc, ukn, ∇ukn, occ)
+        calc_density_τz!(out; wfc=wfc, ukn=ukn, ∇ukn=∇ukn, occ=occ)
+        return out
     elseif calc == "ps"
-        return calc_density_ps(nrmesh, wfc, ukn, ∇ukn, occ)
+        calc_density_ps!(out; wfc=wfc, ukn=ukn, ∇ukn=∇ukn, occ=occ)
+        return out
     else
-        @assert false "Invalid value assigned to 'calc'."
+        error("Invalid value assigned to 'calc'")
     end
 end
 
-function calc_density_ρ(ukn, occ::Vector{Float64})
-    return ES.ein"xyzsb,b->xyz"(abs2.(ukn), occ)
-end
-
-function calc_density_ms(ukn, occ::Vector{Float64})
-    return -real.(ES.optein"xyzsb,sti,xyztb,b->ixyz"(conj.(ukn), σ, ukn, occ))
-end
-
-function calc_density_∇ρ(wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
-    @inbounds for ib in 1:wfc.nbnd
-        ukn[:, :, :, :, ib] .*= occ[ib]
+function calc_density_ρ!(out; ukn, occ::Vector{Float64})
+    nx, ny, nz, ns, nb = size(ukn)
+    @inbounds for ib in 1:nb
+        occib = occ[ib]
+        occib == 0.0 && continue
+        for is in 1:ns, iz in 1:nz, iy in 1:ny, ix in 1:nx
+            out[ix, iy, iz] += abs2(ukn[ix, iy, iz, is, ib]) * occib
+        end
     end
-    return 2.0*imag.(ES.ein"xyzsbi,xyzsb->ixyz"(conj.(∇ukn), ukn))
+    return out
 end
+
+function calc_density_ms!(out; ukn, occ::Vector{Float64})
+    nx, ny, nz, ns, nb = size(ukn)
+    @inbounds for ib in 1:nb
+        occib = occ[ib]
+        occib == 0.0 && continue
+        for iz in 1:nz, iy in 1:ny, ix in 1:nx
+            u1 = ukn[ix, iy, iz, 1, ib]
+            u2 = ukn[ix, iy, iz, 2, ib]
+            out[1, ix, iy, iz] -= 2.0 * real(conj(u1) * u2) * occib
+            out[2, ix, iy, iz] -= 2.0 * imag(conj(u1) * u2) * occib
+            out[3, ix, iy, iz] -= (abs2(u1) - abs2(u2)) * occib
+        end
+    end
+    return out
+end
+
 
 function calc_density_∇ms(wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
     @inbounds for ib in 1:wfc.nbnd
@@ -127,59 +150,142 @@ function calc_density_∇ms(wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
     return -2.0*imag.(ES.optein"xyzsbi,sti,xyztb->xyz"(conj.(∇ukn), σ, ukn))
 end
 
-function calc_density_j(nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
-    @assert wfc.npol == 2
-    kudu = zeros(ComplexF64, (3, nrmesh..., wfc.npol, wfc.nbnd))
-    for ix in 1:3
-        kudu[ix, :, :, :, :, :] = wfc.xk[ix]*ukn[:, :, :, :, :] .+ ∇ukn[:, :, :, :, :, ix]
+function calc_density_j!(out; wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
+    nx, ny, nz, ns, nb = size(ukn)
+    @inbounds for ib in 1:nb
+        occib = occ[ib]
+        occib == 0.0 && continue
+        for is in 1:ns, iz in 1:nz, iy in 1:ny, ix in 1:nx
+            u = ukn[ix, iy, iz, is, ib]
+            uc = conj(u) * occib
+            out[1, ix, iy, iz] += 2.0 * real(uc * (wfc.xk[1] * u + ∇ukn[ix, iy, iz, is, ib, 1]))
+            out[2, ix, iy, iz] += 2.0 * real(uc * (wfc.xk[2] * u + ∇ukn[ix, iy, iz, is, ib, 2]))
+            out[3, ix, iy, iz] += 2.0 * real(uc * (wfc.xk[3] * u + ∇ukn[ix, iy, iz, is, ib, 3]))
+        end
     end
-    @inbounds for ib in 1:wfc.nbnd
-        ukn[:, :, :, :, ib] .*= occ[ib]
-    end
-    return 2.0*real.(ES.ein"xyzsb,ixyzsb->ixyz"(conj.(ukn), kudu))
+    return out
 end
 
-function calc_density_τz(nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
-    @assert wfc.npol == 2
-    kudu = zeros(ComplexF64, (3, nrmesh..., wfc.npol, wfc.nbnd))
-    @inbounds for ix in 1:3
-        kudu[ix, :, :, :, :, :] = wfc.xk[ix]*ukn[:, :, :, :, :] .+ ∇ukn[:, :, :, :, :, ix]
+function calc_density_∇ρ!(out; ukn, ∇ukn, occ::Vector{Float64})
+    nx, ny, nz, ns, nb = size(ukn)
+    @inbounds for ib in 1:nb
+        occib = occ[ib]
+        occib == 0.0 && continue
+        for is in 1:ns, iz in 1:nz, iy in 1:ny, ix in 1:nx
+            u = ukn[ix, iy, iz, is, ib]
+            out[1, ix, iy, iz] += 2.0 * imag(conj(∇ukn[ix, iy, iz, is, ib, 1]) * u) * occib
+            out[2, ix, iy, iz] += 2.0 * imag(conj(∇ukn[ix, iy, iz, is, ib, 2]) * u) * occib
+            out[3, ix, iy, iz] += 2.0 * imag(conj(∇ukn[ix, iy, iz, is, ib, 3]) * u) * occib
+        end
     end
-    @inbounds for ib in 1:wfc.nbnd
-        ukn[:, :, :, :, ib] .*= occ[ib]
-    end
-    tmp = ES.ein"xyzsb,ixyztb->xyzsti"(conj.(ukn), kudu)
-    return 2.0*real.(ES.ein"xyzsti,sti->xyz"(tmp, σ))
+    return out
 end
 
-function calc_density_ps(nrmesh::Tuple, wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
-    @assert wfc.npol == 2
-    kudu = zeros(ComplexF64, (3, nrmesh..., wfc.npol, wfc.nbnd))
-    for ix in 1:3
-        kudu[ix, :, :, :, :, :] = wfc.xk[ix]*ukn[:, :, :, :, :] .+ ∇ukn[:, :, :, :, :, ix]
+function calc_density_∇ms!(out; wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
+    wfc.npol == 2 || error("npol must be 2")
+    nx, ny, nz, ns, nb = size(ukn)
+    ns == 2 || error("ns must be 2")
+    @inbounds for ib in 1:nb
+        occib = occ[ib]
+        occib == 0.0 && continue
+        for iz in 1:nz, iy in 1:ny, ix in 1:nx
+            u1 = ukn[ix, iy, iz, 1, ib]
+            u2 = ukn[ix, iy, iz, 2, ib]
+            dux1 = ∇ukn[ix, iy, iz, 1, ib, 1]
+            dux2 = ∇ukn[ix, iy, iz, 2, ib, 1]
+            duy1 = ∇ukn[ix, iy, iz, 1, ib, 2]
+            duy2 = ∇ukn[ix, iy, iz, 2, ib, 2]
+            duz1 = ∇ukn[ix, iy, iz, 1, ib, 3]
+            duz2 = ∇ukn[ix, iy, iz, 2, ib, 3]
+            val =
+                conj(dux1) * u2 + conj(dux2) * u1 +
+                (-im) * conj(duy1) * u2 + (im) * conj(duy2) * u1 +
+                conj(duz1) * u1 - conj(duz2) * u2
+            out[ix, iy, iz] += -2.0 * imag(val) * occib
+        end
     end
-    @inbounds for ib in 1:wfc.nbnd
-        ukn[:, :, :, :, ib] .*= occ[ib]
-    end
-    tmp = ES.ein"xyzsb,ixyztb->xyzsti"(conj.(ukn), kudu)
-    return -2.0*real.(ES.optein"ijk,stj,xyzstk->ixyz"(ϵijk, σ, tmp))
+    return out
 end
 
-function calc_fourier_k(nrmesh::Tuple, ck)
+
+function calc_density_τz!(out; wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
+    wfc.npol == 2 || error("npol must be 2")
+    nx, ny, nz, ns, nb = size(ukn)
+    ns == 2 || error("ns must be 2")
+    @inbounds for ib in 1:nb
+        occib = occ[ib]
+        occib == 0.0 && continue
+        for iz in 1:nz, iy in 1:ny, ix in 1:nx
+            u1 = ukn[ix, iy, iz, 1, ib]
+            u2 = ukn[ix, iy, iz, 2, ib]
+            c1 = conj(u1) * occib
+            c2 = conj(u2) * occib
+            k1u1 = wfc.xk[1] * u1 + ∇ukn[ix, iy, iz, 1, ib, 1]
+            k1u2 = wfc.xk[1] * u2 + ∇ukn[ix, iy, iz, 2, ib, 1]
+            k2u1 = wfc.xk[2] * u1 + ∇ukn[ix, iy, iz, 1, ib, 2]
+            k2u2 = wfc.xk[2] * u2 + ∇ukn[ix, iy, iz, 2, ib, 2]
+            k3u1 = wfc.xk[3] * u1 + ∇ukn[ix, iy, iz, 1, ib, 3]
+            k3u2 = wfc.xk[3] * u2 + ∇ukn[ix, iy, iz, 2, ib, 3]
+            val =
+                c1 * k1u2 + c2 * k1u1 +
+                (-im) * c1 * k2u2 + (im) * c2 * k2u1 +
+                c1 * k3u1 - c2 * k3u2
+            out[ix, iy, iz] += 2.0 * real(val)
+        end
+    end
+    return out
+end
+
+function calc_density_ps!(out; wfc::Wfc, ukn, ∇ukn, occ::Vector{Float64})
+    wfc.npol == 2 || error("npol must be 2")
+    nx, ny, nz, ns, nb = size(ukn)
+    ns == 2 || error("ns must be 2")
+    @inbounds for ib in 1:nb
+        occib = occ[ib]
+        occib == 0.0 && continue
+        for iz in 1:nz, iy in 1:ny, ix in 1:nx
+            u1 = ukn[ix, iy, iz, 1, ib]
+            u2 = ukn[ix, iy, iz, 2, ib]
+            c1 = conj(u1) * occib
+            c2 = conj(u2) * occib
+
+            k1u1 = wfc.xk[1] * u1 + ∇ukn[ix, iy, iz, 1, ib, 1]
+            k1u2 = wfc.xk[1] * u2 + ∇ukn[ix, iy, iz, 2, ib, 1]
+            k2u1 = wfc.xk[2] * u1 + ∇ukn[ix, iy, iz, 1, ib, 2]
+            k2u2 = wfc.xk[2] * u2 + ∇ukn[ix, iy, iz, 2, ib, 2]
+            k3u1 = wfc.xk[3] * u1 + ∇ukn[ix, iy, iz, 1, ib, 3]
+            k3u2 = wfc.xk[3] * u2 + ∇ukn[ix, iy, iz, 2, ib, 3]
+
+            # tmp_jk = sum_{s,t} conj(u_s) * (k_j u)_t * sigma_k[s,t]
+            tmp12 = (-im) * c1 * k1u2 + (im) * c2 * k1u1
+            tmp13 = c1 * k1u1 - c2 * k1u2
+            tmp21 = c1 * k2u2 + c2 * k2u1
+            tmp23 = c1 * k2u1 - c2 * k2u2
+            tmp31 = c1 * k3u2 + c2 * k3u1
+            tmp32 = (-im) * c1 * k3u2 + (im) * c2 * k3u1
+            out[1, ix, iy, iz] += -2.0 * real(tmp23 - tmp32)
+            out[2, ix, iy, iz] += -2.0 * real(tmp31 - tmp13)
+            out[3, ix, iy, iz] += -2.0 * real(tmp12 - tmp21)
+        end
+    end
+    return out
+end
+
+function calc_fourier_k!(ukn; nrmesh::Tuple)
     if nrmesh[1] == 1
-        cktmp = sum(ck, dims=1)
-        ukn = FFTW.bfft(cktmp, [2,3])
+        ukn = sum(ukn, dims=1)
+        FFTW.bfft!(ukn, [2,3])
         return ukn
     elseif nrmesh[2] == 1
-        cktmp = sum(ck, dims=2)
-        ukn = FFTW.bfft(cktmp, [1,3])
+        ukn = sum(ukn, dims=2)
+        FFTW.bfft!(ukn, [1,3])
         return ukn
     elseif nrmesh[3] == 1
-        cktmp = sum(ck, dims=3)
-        ukn = FFTW.bfft(cktmp, [1,2])
+        ukn = sum(ukn, dims=3)
+        FFTW.bfft!(ukn, [1,2])
         return ukn
     else
-        ukn = FFTW.bfft(ck, [1,2,3])
+        FFTW.bfft!(ukn, [1,2,3])
         return ukn
     end
 end
@@ -196,45 +302,45 @@ function make_c_k(nrmesh::Tuple, wfc::Wfc; n1::Float64=0.0, n2::Float64=0.0, n3:
     hmin, hmax = extrema(@view wfc.mill[1, :])
     kmin, kmax = extrema(@view wfc.mill[2, :])
     lmin, lmax = extrema(@view wfc.mill[3, :])
-    @assert hmax - hmin + 1 <= nrmesh[1] || is1 "'nrmesh' are too small."
-    @assert kmax - kmin + 1 <= nrmesh[2] || is2 "'nrmesh' are too small."
-    @assert lmax - lmin + 1 <= nrmesh[3] || is3 "'nrmesh' are too small."
-    i1 = abs(-div(nrmesh[1], 2) - hmin)
-    i2 = abs(-div(nrmesh[2], 2) - kmin)
-    i3 = abs(-div(nrmesh[3], 2) - lmin)
-    ns1 = (hmax - hmin) * is1 + nrmesh[1] * (!is1)
-    ns2 = (kmax - kmin) * is2 + nrmesh[2] * (!is2)
-    ns3 = (lmax - lmin) * is3 + nrmesh[3] * (!is3)
-    ihs = i1 .+ (@view wfc.mill[1, :]) .- hmin .+ 1
-    iks = i2 .+ (@view wfc.mill[2, :]) .- kmin .+ 1
-    ils = i3 .+ (@view wfc.mill[3, :]) .- lmin .+ 1
+    (hmax - hmin + 1 ≤ nrmesh[1] || is1) || error("nrmesh are too small")
+    (kmax - kmin + 1 ≤ nrmesh[2] || is2) || error("nrmesh are too small")
+    (lmax - lmin + 1 ≤ nrmesh[3] || is3) || error("nrmesh are too small")
+    ns1 = is1 ? hmax - hmin + 1 : nrmesh[1]
+    ns2 = is2 ? kmax - kmin + 1 : nrmesh[2]
+    ns3 = is3 ? lmax - lmin + 1 : nrmesh[3]
     if is2d == true
         epn1 = exp(im*2π*n1)
         epn2 = exp(im*2π*n2)
         epn3 = exp(im*2π*n3)
     end
 
-    cktmp = zeros(ComplexF64, (ns1, ns2, ns3, wfc.npol, wfc.nbnd))
-    ∇cktmp = is∇u == true ? zeros(ComplexF64, (ns1, ns2, ns3, wfc.npol, wfc.nbnd, 3)) : Array{ComplexF64}(undef, 1,1,1,1,1,1)
+    ck = zeros(ComplexF64, ns1, ns2, ns3, wfc.npol, wfc.nbnd)
+    ∇ck = is∇u == true ? zeros(ComplexF64, ns1, ns2, ns3, wfc.npol, wfc.nbnd, 3) : Array{ComplexF64}(undef, 1,1,1,1,1,1)
     @inbounds for ipw in 1:wfc.igwx
-        h, k, l = wfc.mill[:, ipw]
+        h = wfc.mill[1, ipw]
+        k = wfc.mill[2, ipw]
+        l = wfc.mill[3, ipw]
         if is2d == true
             epn = epn1^(is1 ? h : 0) * epn2^(is2 ? k : 0) * epn3^(is3 ? l : 0)
         else
             epn = 1.0
         end
-        i1p, i2p, i3p = ihs[ipw], iks[ipw], ils[ipw]
-        evcepn = wfc.evc[:, :, ipw] .* epn
-        cktmp[i1p, i2p, i3p, :, :] .= evcepn
-        if is∇u == true
-            gvec = h * wfc.b1 + k * wfc.b2 + l * wfc.b3 
-            for ii in 1:3
-                ∇cktmp[i1p, i2p, i3p, :, :, ii] .= evcepn .* gvec[ii]
+        i1p = is1 ? (h - hmin + 1) : (mod(h, nrmesh[1]) + 1)
+        i2p = is2 ? (k - kmin + 1) : (mod(k, nrmesh[2]) + 1)
+        i3p = is3 ? (l - lmin + 1) : (mod(l, nrmesh[3]) + 1)
+        gx = h * wfc.b1[1] + k * wfc.b2[1] + l * wfc.b3[1]
+        gy = h * wfc.b1[2] + k * wfc.b2[2] + l * wfc.b3[2]
+        gz = h * wfc.b1[3] + k * wfc.b2[3] + l * wfc.b3[3]
+        @inbounds for ib in 1:wfc.nbnd, is in 1:wfc.npol
+            v = wfc.evc[is, ib, ipw] * epn
+            ck[i1p, i2p, i3p, is, ib] = v
+            if is∇u
+                ∇ck[i1p, i2p, i3p, is, ib, 1] = v * gx
+                ∇ck[i1p, i2p, i3p, is, ib, 2] = v * gy
+                ∇ck[i1p, i2p, i3p, is, ib, 3] = v * gz
             end
         end
     end
-    ck = FFTW.ifftshift(cktmp, 1:3)
-    ∇ck = is∇u == true ? FFTW.ifftshift(∇cktmp, 1:3) : ∇cktmp
     return ck, ∇ck
 end
 
