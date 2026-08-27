@@ -220,3 +220,13 @@ end
 #     @test gs[:, 2] == [0, 0, -1]
 #     @test gs[:, 3] == [0, 0, 1]
 # end
+
+@testset "MPI" begin
+    nk = 10
+    nproc = 4
+    expected = [(1, 3), (4, 6), (7, 8), (9, 10)]
+    for i in 0:nproc-1
+        ist, iend = calc_ikrange(nk, nproc, i)
+        @test (ist, iend) == expected[i + 1]
+    end
+end

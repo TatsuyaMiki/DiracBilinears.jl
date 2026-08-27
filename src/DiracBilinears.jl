@@ -6,7 +6,7 @@ export calc_density, make_nrmesh, calc_occupation, is_2d, make_zeros_density, ca
 export read_lattice, calc_b
 export calc_wannier_matrix, calc_rgrid, read_hrdat_rgrid, write_wannier_matrix
 export Xml, Wfc, read_wfc, read_xml
-export methfessel_paxton_δ, methfessel_paxton_step, stepc
+export methfessel_paxton_δ, methfessel_paxton_step, stepc, calc_ikrange
 
 import EzXML
 import FFTW
