@@ -64,7 +64,7 @@ function read_kg(filename::String, ngi::Vector{Int}, ntg::Int, nkirr::Int)
     kgi = zeros(Int, 3, ntg, nkirr)
     for ik in 1:nkirr
         ngiref = parse(Int, readline(io))
-        @assert ngiref == ngi[ik]
+        ngiref == ngi[ik] || error("ngiref != ngi[$(ik)]")
         for ig in 1:ngiref
             kgi[:, ig, ik] = parse.(Int, split(readline(io)))
         end
@@ -97,7 +97,7 @@ function calc_kg0s(gcut::Float64, rg::Array{Int, 3}, rw::Matrix{Int}, ngi::Vecto
         iop = numrot[jk]
         ktmp = rg[:,1,iop]*ski[1,ik] + rg[:,2,iop]*ski[2,ik] + rg[:,3,iop]*ski[3,ik] + rw[:,jk]
         kgtmp, ngψ = make_kg0(ntg,b1,b2,b3, gcut, ktmp, ngl)
-        @assert ngψ == ngi[ik] "ERROR; ngψ should be ngI[ik]"
+        ngψ == ngi[ik] || error("ngψ != ngi[$(ik)]")
         ng0[jk] = ngψ
         if trs[jk]==1
             kg0[:,:,jk] = kgtmp
@@ -195,7 +195,7 @@ function est_ntk(nkirr::Int, nsymq::Int, ski::Matrix{Float64}, rg::Array{Int, 3}
     end
     ntk = jk
     if ntk > n
-        @assert false "Estimated ntk is too large; stop"
+        error("Estimated ntk is too large")
     end
     return sk0, ntk
 end
@@ -283,7 +283,7 @@ function read_sample_k(filename::String, nsymq::Int, rg::Array{Int, 3})
         end
     end
     ntk = est_nkbi(ntk, sk0)
-    @assert ntk == jk "ERROR; ntk(=$(ntk)) should be jk(=$(jk))"
+    ntk == jk || error("ntk(=$(ntk)) should be jk(=$(jk))")
     return ski, sk0, numirr, numrot, trs, rw, nkirr, ntk
 end
 

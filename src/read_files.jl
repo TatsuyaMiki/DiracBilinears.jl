@@ -80,7 +80,7 @@ function read_wan_grid(rfile::String)
             flagscf = true
         end
     end
-    @assert nx != 0 && ny != 0 && nz != 0 "Failed to read k-points."
+    nx != 0 && ny != 0 && nz != 0 || error("Failed to read k-points")
     return (nx, ny, nz)
 end
 
@@ -113,11 +113,11 @@ function read_xml(filename::String)
     elseif slda == "true" && noncolin == "false"
         nbnd_up = parse(Int, EzXML.nodecontent(findfirst("//nbnd_up/text()", primates)))
         nbnd_dw = parse(Int, EzXML.nodecontent(findfirst("//nbnd_up/text()", primates)))
-        @assert nbnd_up == nbnd_dw 
+        nbnd_up == nbnd_dw || error("nbnd_up != nbnd_dw")
         nbnd = nbnd_up
         e = zeros(Float64, (2nbnd, nxk))
     else
-        @assert false "Unsupported option: slda == 'true' && noncolin == 'true'."
+        error("Unsupported option: slda == 'true' && noncolin == 'true'")
     end
     for ik in 1:nxk
         e[:, ik] = parse.(Float64, split(species[ik]))

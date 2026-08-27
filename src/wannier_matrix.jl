@@ -30,7 +30,7 @@ function calc_wannier_matrix(;calc::String, wfndir::String, wandir::String, rgri
 end
 
 function calc_rgrid(;mpmesh::Tuple=(0,0,0), rfile::String="none")
-    @assert rfile != "none" || mpmesh != (0, 0, 0) "No argument specified."
+    (rfile != "none" || mpmesh != (0, 0, 0)) || error("No argument specified")
     if mpmesh == (0, 0, 0)
         mpmesh = read_wan_grid(rfile)
     end
@@ -93,7 +93,7 @@ function make_zeros_wannier(calc::String, nr::Int, nwfc::Int)
     elseif calc == "ps"
         return zeros(ComplexF64, (3, nwfc, nwfc, nr))
     else
-        @assert false "Invalid value assigned to 'calc'."
+        error("Invalid value assigned to 'calc'")
     end
 end
 
@@ -109,7 +109,7 @@ function calc_wannier_ok(calc::String, cs::Array{ComplexF64, 3}, k::Vector{Float
     elseif calc == "ps"
         return calc_wan_ps(cs, k, mill, b1, b2, b3, igwx, nwfc, nxk)
     else
-        @assert false "Invalid value assigned to 'calc'."
+        error("Invalid value assigned to 'calc'")
     end
 end
 

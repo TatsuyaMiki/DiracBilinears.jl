@@ -1,15 +1,18 @@
 
-function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64=0.0, n3::Float64=0.0, nrmesh::Tuple=(0,0,0), δμ::Float64=0.0, emin::Float64=100000.0, smearing::String="step", degauss::Float64=0.01)
-    ## - n1, n2, n3 are parameters which can be used for calculations in a 2D plane.
-    ##   The calculations are performed on a plane perpendicular to ai (i=1,2,3) that passes through ni*ai.
-    ## - The chemical potential can be shifted using δμ (eV).
-    ## - The core levels can be excluded by using emin (eV).
+function calc_density(;calc::String, qedir::String, n1::Float64=0.0, n2::Float64=0.0, n3::Float64=0.0, nrmesh::Tuple=(0,0,0), δμ::Float64=0.0, emin::Float64=100000.0, smearing::String="step", degauss::Float64=0.01, ikst::Int=1, ikend::Union{Int,Nothing}=nothing)
+    ## - n1, n2, n3 are parameters which can be used for calculations in a 2D plane
+    ##   The calculations are performed on a plane perpendicular to ai (i=1,2,3) that passes through ni*ai
+    ## - The chemical potential can be shifted using δμ (eV)
+    ## - The core levels can be excluded by using emin (eV)
+    ## - ikst and ikend specify the first and last k-point indices
     is∇u = is∇ukn(calc)
     xml = read_xml(qedir*"/data-file-schema.xml")
+    ikend_ = isnothing(ikend) ? xml.nxk : ikend
+    1 ≤ ikst ≤ ikend_ ≤ xml.nxk || error("k-point indices must satisfy 1 ≤ ikst ≤ ikend ≤ $(xml.nxk)")
     nrmesh_ = make_nrmesh(xml=xml, nrmesh=nrmesh)
     o = make_zeros_density(calc, nrmesh_)
     volume = xml.nxk * abs(LA.dot(xml.a3, LA.cross(xml.a1, xml.a2)))
-    for ik in 1:xml.nxk
+    for ik in ikst:ikend_
         wfc = qewfc(ik, xml, qedir)
         occ = calc_occupation(xml.e[:, ik]; ef=xml.ef, smearing=smearing, degauss=degauss, δμ=δμ, emin=emin)
         ukn, ∇ukn = make_c_k(nrmesh_, wfc; n1=n1, n2=n2, n3=n3, is∇u=is∇u)
@@ -49,7 +52,7 @@ function calc_occupation(e::Vector{Float64}; ef::Float64, smearing::String="step
         occ = zeros(Float64, size(e))
         occ[idx] .= 1.0
     else
-        @assert false "Invalid value assigned to 'smearing'."
+        error("Invalid value assigned to 'smearing'")
     end
     if emin < 100000.0
         idx = findall(x -> (x < ef + emin/hartree2ev), e)
@@ -347,7 +350,7 @@ end
 
 function write_density(f0::Array{Float64, 3}; qedir::String="manual", savefile::String, atoms::Vector{String}=["none"], atomicpos::Matrix{Float64}=zeros(3,2), a1::Vector{Float64}=zeros(Float64, 3), a2::Vector{Float64}=zeros(Float64, 3), a3::Vector{Float64}=zeros(Float64, 3), comment::String="# Written on "*"$(Dates.now())", format::String="xsf", unit::String="bohr")
     if qedir != "manual"
-        @assert a1 == zeros(Float64, 3) && a2 == zeros(Float64, 3) && a3 == zeros(Float64, 3)
+        a1 == zeros(Float64, 3) && a2 == zeros(Float64, 3) && a3 == zeros(Float64, 3) || error("a1, a2, a3 can only be specified when qedir='manual'")
         xml = read_xml(qedir*"/data-file-schema.xml")
         a1 = xml.a1
         a2 = xml.a2

@@ -2,7 +2,7 @@
 stepc(x) = step(-x)
 
 function methfessel_paxton_δ(x::Float64; n::Int=1)
-    @assert n >= 1
+    n ≥ 1 || error("n must be n ≥ 1")
     d = 1.0 / √(π)
     hold = 1.0
     hodd = 2 * x
@@ -19,7 +19,7 @@ function methfessel_paxton_δ(x::Float64; n::Int=1)
 end
 
 function methfessel_paxton_step(x::Float64; n::Int=1)
-    @assert n >= 1
+    n ≥ 1 || error("n must be n ≥ 1")
     s0 = 0.5 * (1.0 - SF.erf(x))
     hold = 1.0
     hodd = 2 * x
@@ -34,4 +34,16 @@ function methfessel_paxton_step(x::Float64; n::Int=1)
     end
     s = s0 + sn * exp(-x^2)
     return s
+end
+
+function calc_ikrange(nk::Int, nproc::Int, rank::Int)
+    @assert 1 ≤ nproc
+    @assert 0 ≤ rank < nproc
+    @assert 1 ≤ nk
+
+    q, r = divrem(nk, nproc)
+    nlocal = q + (rank < r ? 1 : 0)
+    ikst = rank * q + min(rank, r) + 1
+    ikend = ikst + nlocal - 1
+    return ikst, ikend
 end
